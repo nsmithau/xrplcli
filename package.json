@@ -1,0 +1,15 @@
+{
+	"name": "xrplcli",
+	"type": "module",
+	"version": "1.0.0",
+	"dependencies": {
+		"@xrplkit/socket": "2.1.0",
+		"@xrplkit/submit": "1.2.0",
+		"@xrplkit/wallet": "1.1.0",
+		"clipboardy": "4.0.0",
+		"enquirer": "2.4.1",
+		"minimist": "1.2.8",
+		"qrcode-terminal": "0.12.0",
+		"ripple-binary-codec": "2.1.0"
+	}
+}
