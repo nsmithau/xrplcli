@@ -58,7 +58,7 @@ export async function askChoice({ message, options }){
 		let index = parseInt(input)
 
 		if(!index || index < 1 || index > optionsList.length){
-			console.log(`not a valid choice`)
+			console.log(`not a valid choice - try again`)
 			continue
 		}
 
@@ -99,7 +99,7 @@ export async function askJSON({ message }){
 			)
 		}catch(e){
 			if(e instanceof SyntaxError)
-				console.log(`input is not valid JSON\n`)
+				console.log(`input is not valid JSON - try again\n`)
 			else
 				throw e
 		}

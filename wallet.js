@@ -9,7 +9,7 @@ export async function askSecret({ message }){
 	let input = await ask({ 
 		message: message || 'enter secret key',
 		validate: input => !deriveCredentials(input) 
-			&& 'invalid key'
+			&& 'invalid key - try again'
 	})
 
 	return deriveCredentials(input)
