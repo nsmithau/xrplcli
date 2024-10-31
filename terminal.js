@@ -1,5 +1,8 @@
 import readline from 'readline/promises'
 
+const colorReset = '\x1b[0m'
+const colorCyan = '\x1b[36m'
+
 const rl = readline.createInterface({
 	input: process.stdin,
 	output: process.stdout
@@ -7,13 +10,15 @@ const rl = readline.createInterface({
 
 rl.on('SIGINT', () => {
 	rl.close()
-	console.log('ABORT')
+	console.log(colorReset + 'ABORT')
 	process.exit()
 })
 
 export async function ask({ message, validate }){
 	while(true){
-		let input = await rl.question(message)
+		let input = await rl.question(colorReset + message + colorCyan)
+
+		process.stdout.write(colorReset)
 
 		if(validate){
 			let issue = await validate(input)
@@ -35,13 +40,15 @@ export async function askChoice({ message, options }){
 	console.log(message)
 
 	for(let [_, label] of optionsList){
-		console.log(`[${++nr}] ${label}`)
+		console.log(`[${colorCyan}${++nr}${colorReset}] ${label}`)
 	}
 
 	console.log()
 
 	while(true){
-		let input = await rl.question(`your choice (1-${optionsList.length}): `)
+		let input = await rl.question(`${colorReset}your choice (1-${optionsList.length}): ${colorCyan}`)
+
+		process.stdout.write(colorReset)
 
 		if(input.length === 0){
 			console.log(`enter number between 1 and ${optionsList.length}`)
@@ -83,11 +90,12 @@ export async function askJSON({ message }){
 			}
 
 			rl.on('line', lineHandler)
-			rl.setPrompt(message)
+			rl.setPrompt(`${colorReset}${message}${colorCyan}`)
 			rl.prompt(true)
 
 			return JSON.parse(
 				await new Promise(res => resolve = res)
+					.then(result => (process.stdout.write(colorReset), result))
 			)
 		}catch(e){
 			if(e instanceof SyntaxError)
