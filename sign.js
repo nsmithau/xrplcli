@@ -7,9 +7,9 @@ import { submit } from './submit.js'
 
 export async function sign({ tx }){
 	if(!tx)
-		tx = await askJSON({ message: 'enter payload to sign:' })
+		tx = await askJSON({ message: 'transaction to sign (json): ' })
 
-	let credentails = await askSecret({ message: 'enter secret key to sign:' })
+	let credentails = await askSecret({ message: 'enter secret key to sign: ' })
 	let signed
 
 	try{
@@ -21,32 +21,36 @@ export async function sign({ tx }){
 	let signedJson = JSON.stringify(signed, null, 4)
 	let signedBlob = encode(signed)
 
-	console.log('successfully signed!')
-	console.log(`\n-----BEGIN SIGNED TX BLOB-----\n\x1b[36m${signedBlob}\x1b[0m\n-----END SIGNED TX BLOB-----\n`)
-	console.log(`\n-----BEGIN SIGNED TX JSON-----\n\x1b[36m${signedJson}\x1b[0m\n-----END SIGNED TX JSON-----\n`)
+	console.log()
+	console.log(`signed blob:\n${signedBlob}`)
+	console.log()
+	console.log(`signed json:\n${signedJson}`)
+	console.log()
+
+
 
 	while(true){
 		let nextAction = await askChoice({
 			message: 'how to proceed?',
-			choices: {
-				clipboardJson: 'copy json to clipboard',
+			options: {
 				clipboardBlob: 'copy blob to clipboard',
+				clipboardJson: 'copy json to clipboard',
 				qr: 'print QR code',
-				submit: 'submit tx to network',
+				submit: 'submit to network',
 				exit: 'exit',
 			}
 		})
 	
 		switch(nextAction){
-			case 'clipboardJson': {
-				clipboard.writeSync(signedJson)
-				console.log('copied json to clipboard!\n')
-				break
-			}
-
 			case 'clipboardBlob': {
 				clipboard.writeSync(signedBlob)
 				console.log('copied blob to clipboard!\n')
+				break
+			}
+
+			case 'clipboardJson': {
+				clipboard.writeSync(signedJson)
+				console.log('copied json to clipboard!\n')
 				break
 			}
 

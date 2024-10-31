@@ -1,11 +1,33 @@
 import minimist from 'minimist'
-import { sign } from './tx.js'
+import { sign } from './sign.js'
 import { submit } from './submit.js'
 import { askChoice } from './terminal.js'
 
 async function cli(args){
+	console.log(
+` __  _____ ___ _    ___ _    ___ 
+ \\ \\/ / _ \\ _ \\ |  / __| |  |_ _|
+  >  <|   /  _/ |_| (__| |__ | | 
+ /_/\\_\\_|_\\_| |____\\___|____|___|
+`)
+	
+	let action = args._[0]
+
+	if(!action){
+		action = await askChoice({
+			message: 'choose action:',
+			options: {
+				tx: 'create transaction',
+				sign: 'sign transaction',
+				submit: 'submit transaction',
+				create: 'create wallet',
+				close: 'close wallet',
+			}
+		})
+	}
+																 
 	try{
-		switch(args._[0]){
+		switch(action){
 			case 'sign': {
 				await sign({ tx: null })
 				break
@@ -15,20 +37,15 @@ async function cli(args){
 				await submit({ payload: null })
 				break
 			}
+
+			case 'close': {
+				await submit({ payload: null })
+				break
+			}
 		
 			default: {
-				let choice = await askChoice({
-					message: 'choose action',
-					choices: {
-						tx: 'make transaction',
-						sign: 'sign transaction or payload',
-						submit: 'submit transaction'
-					}
-				})
-
-				await cli({
-					_: [choice]
-				})
+				console.log(`command "${action}" is not known`)
+				process.exit()
 			}
 		}
 	}catch(error){

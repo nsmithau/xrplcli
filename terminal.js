@@ -1,77 +1,99 @@
-import enquirer from 'enquirer'
+import readline from 'readline/promises'
 
-export async function ask({ message, multiline, validate }){
-	let prompt = new enquirer.Input({
-		message,
-		multiline,
-		validate
-	})
+const rl = readline.createInterface({
+	input: process.stdin,
+	output: process.stdout
+})
 
-	prompt.styles.primary = prompt.styles.white
-	prompt.styles.submitted = prompt.styles.disabled
-	prompt.styles.danger = prompt.styles.warning
-	prompt.prefix = () => ''
-	prompt.separator = () => ''
-	prompt.message = () => message
+rl.on('SIGINT', () => {
+	rl.close()
+	console.log('ABORT')
+	process.exit()
+})
 
-	return await prompt.run()
-}
+export async function ask({ message, validate }){
+	while(true){
+		let input = await rl.question(message)
 
-export async function askPayload({ message }){
-	let input = await ask({
-		message,
-		multiline: true,
-		validate: input => {
-			if(/^[0-9A-F]+\n*$/.test(input))
-				return true
-			try{
-				return !!JSON.parse(input) || true
-			}catch{
-				return 'input is neither valid JSON nor HEX - please correct'
+		if(validate){
+			let issue = await validate(input)
+
+			if(typeof issue === 'string'){
+				console.log(`${issue}`)
+				continue
 			}
 		}
-	})
 
-	process.stdout.write(`\x1B[F`)
+		return input
+	}
+}
 
-	return /^[A-Z0-9]+\n*$/.test(input) 
-		? input 
-		: JSON.parse(input)
+export async function askChoice({ message, options }){
+	let nr = 0
+	let optionsList = Object.entries(options)
+	
+	console.log(message)
+
+	for(let [_, label] of optionsList){
+		console.log(`[${++nr}] ${label}`)
+	}
+
+	console.log()
+
+	while(true){
+		let input = await rl.question(`your choice (1-${optionsList.length}): `)
+
+		if(input.length === 0){
+			console.log(`enter number between 1 and ${optionsList.length}`)
+			continue
+		}
+
+		let index = parseInt(input)
+
+		if(!index || index < 1 || index > optionsList.length){
+			console.log(`not a valid choice`)
+			continue
+		}
+
+		return optionsList[index - 1][0]
+	}
 }
 
 export async function askJSON({ message }){
-	let json = await ask({
-		message,
-		multiline: true,
-		validate: input => {
-			try{
-				return !!JSON.parse(input) || true
-			}catch{
-				return 'input is invalid JSON - please correct'
+	while(true){
+		try{
+			let resolve
+			let lines = []
+			let lineHandler = line => {
+				lines.push(line)
+
+				let text = lines.join('\n').trim()
+				let complete = true
+
+				try{
+					JSON.parse(text)
+				}catch{
+					complete = false
+				}
+
+				if(complete || line.length === 0){
+					rl.off('line', lineHandler)
+					resolve(text)
+				}
 			}
+
+			rl.on('line', lineHandler)
+			rl.setPrompt(message)
+			rl.prompt(true)
+
+			return JSON.parse(
+				await new Promise(res => resolve = res)
+			)
+		}catch(e){
+			if(e instanceof SyntaxError)
+				console.log(`input is not valid JSON\n`)
+			else
+				throw e
 		}
-	})
-
-	process.stdout.write(`\x1B[F`)
-
-	return JSON.parse(json)
-}
-
-export async function askChoice({ message, choices }){
-	let prompt = new enquirer.Select({
-		message,
-		choices: Object.values(choices),
-		promptLine: false
-	})
-
-	prompt.styles.em = prompt.styles.white
-	prompt.styles.primary = prompt.styles.white
-
-	console.log(message)
-
-	let choice = await prompt.run()
-
-	return Object.entries(choices)
-		.find(([key, label]) => label === choice)
-		[0]
+	}
 }
