@@ -2,6 +2,7 @@ import readline from 'readline/promises'
 
 const colorReset = '\x1b[0m'
 const colorCyan = '\x1b[36m'
+const colorRed = '\x1b[38;5;197m'
 
 const rl = readline.createInterface({
 	input: process.stdin,
@@ -24,7 +25,7 @@ export async function ask({ message, validate }){
 			let issue = await validate(input)
 
 			if(typeof issue === 'string'){
-				console.log(`${issue}`)
+				console.log(`${colorRed}${issue}${colorReset}`)
 				continue
 			}
 		}
@@ -58,7 +59,7 @@ export async function askChoice({ message, options }){
 		let index = parseInt(input)
 
 		if(!index || index < 1 || index > optionsList.length){
-			console.log(`not a valid choice - try again`)
+			console.log(`${colorRed}${input} is not a valid choice - try again${colorReset}`)
 			continue
 		}
 
@@ -99,7 +100,7 @@ export async function askJSON({ message }){
 			)
 		}catch(e){
 			if(e instanceof SyntaxError)
-				console.log(`input is not valid JSON - try again\n`)
+				console.log(`${colorRed}input is not valid JSON - try again${colorReset}\n`)
 			else
 				throw e
 		}
