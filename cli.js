@@ -10,23 +10,23 @@ async function cli(args){
  \\ \\/ / _ \\ _ \\ |  / __| |  |_ _|
   >  <|   /  _/ |_| (__| |__ | | 
  /_/\\_\\_|_\\_| |____\\___|____|___|`)
-	
-	let action = args._[0]
-
-	if(!action){
-		action = await askChoice({
-			message: 'choose action',
-			options: {
-				tx: 'create transaction',
-				sign: 'sign transaction',
-				submit: 'submit transaction',
-				create: 'create wallet',
-				close: 'close wallet',
-			}
-		})
-	}
-																 
+														 
 	try{
+		let action = args._[0]
+
+		if(!action){
+			action = await askChoice({
+				message: 'choose action',
+				options: {
+					tx: 'create transaction',
+					sign: 'sign transaction',
+					submit: 'submit transaction',
+					create: 'create wallet',
+					close: 'close wallet',
+				}
+			})
+		}
+
 		switch(action){
 			case 'tx': {
 				await createTx({ type: null })
@@ -54,11 +54,12 @@ async function cli(args){
 			}
 		}
 	}catch(error){
-		if(error === ''){
-			console.log('aborted')
-			process.exit(1)
+		if(error.abort){
+			console.log('ABORT')
+			process.exit()
+		}else{
+			throw error
 		}
-		console.error(error)
 	}
 }
 

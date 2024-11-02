@@ -9,20 +9,9 @@ const rl = readline.createInterface({
 	output: process.stdout
 })
 
-rl.on('SIGINT', () => {
-	rl.close()
-	console.log(colorReset + 'ABORT')
-	process.exit()
-})
-
 export async function ask({ message, validate, preset }){
 	while(true){
-		let [input, _] = await Promise.all([
-			rl.question(colorReset + message + colorCyan),
-			Promise.resolve(preset ? rl.write(preset) : null)
-		])
-
-		process.stdout.write(colorReset)
+		let input = await prompt(message, preset)
 
 		if(validate){
 			let issue = await validate(input)
@@ -51,9 +40,7 @@ export async function askChoice({ message, options }){
 	console.log()
 
 	while(true){
-		let input = await rl.question(`${colorReset}${message} (1-${optionsList.length}): ${colorCyan}`)
-
-		process.stdout.write(colorReset)
+		let input = await prompt(`${colorReset}${message} (1-${optionsList.length}): ${colorCyan}`)
 
 		if(input.length === 0){
 			console.log(`enter number between 1 and ${optionsList.length}`)
@@ -113,4 +100,35 @@ export async function askJSON({ message }){
 
 export async function askMnemonic({ message, type }){
 	
+}
+
+export function cyan(text){
+	return `${colorCyan}${text}${colorReset}`
+}
+
+function prompt(message, preset){
+	return new Promise(
+		(resolve, reject) => {
+			let abortController = new AbortController()
+			let handleAbort = () => {
+				abortController.abort()
+				process.stdout.write(colorReset)
+				reject({ abort: true })
+			}
+
+			rl.question(
+				`${colorReset}${message}${colorCyan}`, 
+				{ signal: abortController.signal }
+			).catch(() => 0).then(input => {
+				process.stdout.write(colorReset)
+				rl.off('SIGINT', handleAbort)
+				resolve(input)
+			})
+
+			if(preset)
+				rl.write(preset)
+
+			rl.once('SIGINT', handleAbort)
+		}
+	)
 }
