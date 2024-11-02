@@ -2,6 +2,7 @@ import minimist from 'minimist'
 import { sign } from './sign.js'
 import { submit } from './submit.js'
 import { askChoice } from './terminal.js'
+import { createTx } from './tx.js'
 
 async function cli(args){
 	console.log(
@@ -28,6 +29,11 @@ async function cli(args){
 																 
 	try{
 		switch(action){
+			case 'tx': {
+				await createTx({ type: null })
+				break
+			}
+
 			case 'sign': {
 				await sign({ tx: null })
 				break
