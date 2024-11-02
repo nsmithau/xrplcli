@@ -15,9 +15,12 @@ rl.on('SIGINT', () => {
 	process.exit()
 })
 
-export async function ask({ message, validate }){
+export async function ask({ message, validate, preset }){
 	while(true){
-		let input = await rl.question(colorReset + message + colorCyan)
+		let [input, _] = await Promise.all([
+			rl.question(colorReset + message + colorCyan),
+			Promise.resolve(preset ? rl.write(preset) : null)
+		])
 
 		process.stdout.write(colorReset)
 
@@ -26,6 +29,7 @@ export async function ask({ message, validate }){
 
 			if(typeof issue === 'string'){
 				console.log(`${colorRed}${issue}${colorReset}`)
+				preset = input
 				continue
 			}
 		}
