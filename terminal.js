@@ -105,3 +105,7 @@ export async function askJSON({ message }){
 		}
 	}
 }
+
+export async function askMnemonic({ message, type }){
+	
+}

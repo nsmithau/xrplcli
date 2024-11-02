@@ -1,19 +1,51 @@
-import { sign as signTx } from '@xrplkit/submit'
+import { sign as libSignTx } from '@xrplkit/submit'
 import { encode } from 'ripple-binary-codec'
-import { askChoice, askJSON } from './terminal.js'
+import { askChoice, askJSON, askMnemonic } from './terminal.js'
 import { askSecret } from './wallet.js'
 import { submit } from './submit.js'
 
 
-export async function sign({ tx }){
-	if(!tx)
-		tx = await askJSON({ message: 'transaction to sign (json): ' })
+export async function sign({ format }){
+	if(!format){
+		console.log()
+		
+		format = await askChoice({
+			message: 'what to sign?',
+			options: {
+				tx_json: 'transaction (json)',
+				tx_blob: 'transaction (blob)',
+				tx_mnemonic: 'transaction (mnemonic)',
+				msg_txt: 'message (text)',
+				msg_blob: 'message (blob)'
+			}
+		})
+	}
 
+	switch(format){
+		case 'tx_json': {
+			return await signTx({
+				tx: await askJSON({
+					message: 'transaction to sign (json): '
+				})
+			})
+		}
+		case 'tx_mnemonic': {
+			return await signTx({
+				tx: await askMnemonic({
+					message: 'transaction to sign (mnemonic): ',
+					type: 'tx'
+				})
+			})
+		}
+	}
+}
+
+async function signTx({ tx }){
 	let credentails = await askSecret({ message: 'enter secret key to sign: ' })
 	let signed
 
 	try{
-		signed = await signTx({ tx, ...credentails })
+		signed = await libSignTx({ tx, ...credentails })
 	}catch(error){
 		console.log(error)
 	}
