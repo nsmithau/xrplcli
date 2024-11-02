@@ -15,7 +15,7 @@ async function cli(args){
 
 	if(!action){
 		action = await askChoice({
-			message: 'choose action:',
+			message: 'choose action',
 			options: {
 				tx: 'create transaction',
 				sign: 'sign transaction',

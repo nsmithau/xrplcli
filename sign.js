@@ -7,10 +7,8 @@ import { submit } from './submit.js'
 
 export async function sign({ format }){
 	if(!format){
-		console.log()
-		
 		format = await askChoice({
-			message: 'what to sign?',
+			message: 'payload type',
 			options: {
 				tx_json: 'transaction (json)',
 				tx_blob: 'transaction (blob)',
@@ -61,9 +59,9 @@ async function signTx({ tx }){
 
 	while(true){
 		let nextAction = await askChoice({
-			message: 'how to proceed?',
+			message: 'proceed with signed transaction',
 			options: {
-				qr: 'print QR code',
+				qr: 'print blob as QR code',
 				submit: 'submit to network',
 				exit: 'exit',
 			}

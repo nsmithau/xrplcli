@@ -37,7 +37,7 @@ export async function askChoice({ message, options }){
 	let nr = 0
 	let optionsList = Object.entries(options)
 	
-	console.log(message)
+	console.log()
 
 	for(let [_, label] of optionsList){
 		console.log(`[${colorCyan}${++nr}${colorReset}] ${label}`)
@@ -46,7 +46,7 @@ export async function askChoice({ message, options }){
 	console.log()
 
 	while(true){
-		let input = await rl.question(`${colorReset}your choice (1-${optionsList.length}): ${colorCyan}`)
+		let input = await rl.question(`${colorReset}${message} (1-${optionsList.length}): ${colorCyan}`)
 
 		process.stdout.write(colorReset)
 
