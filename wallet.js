@@ -1,16 +1,19 @@
 import { deriveAddress, derivePublicKey } from '@xrplkit/wallet'
-import { ask } from './terminal.js'
+import { ask, cyan } from './terminal.js'
 
 export async function closeWallet(){
 	
 }
 
-export async function askSecret({ message }){
+export async function askSecret({ message = 'enter secret key' }){
 	let input = await ask({ 
-		message: message || 'enter secret key',
+		message,
 		validate: input => !deriveCredentials(input) 
 			&& 'invalid key - try again'
 	})
+
+	process.stdout.moveCursor(0, -1)
+	process.stdout.write(`${message}: ${cyan('*'.repeat(input.length))}\n`)
 
 	return deriveCredentials(input)
 }
