@@ -106,6 +106,10 @@ export function cyan(text){
 	return `${colorCyan}${text}${colorReset}`
 }
 
+export function red(text){
+	return `${colorRed}${text}${colorReset}`
+}
+
 function prompt(message, preset){
 	return new Promise(
 		(resolve, reject) => {

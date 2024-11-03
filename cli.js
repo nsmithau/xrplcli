@@ -50,17 +50,18 @@ async function cli(args){
 		
 			default: {
 				console.log(`command "${action}" is not known`)
-				process.exit()
+				break
 			}
 		}
 	}catch(error){
 		if(error.abort){
 			console.log('ABORT')
-			process.exit()
 		}else{
 			throw error
 		}
 	}
+
+	process.exit()
 }
 
 await cli(minimist(process.argv.slice(2)))
