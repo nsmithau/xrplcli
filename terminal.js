@@ -27,6 +27,14 @@ export async function ask({ message, validate, preset }){
 	}
 }
 
+export async function askConfirm({ message }){
+	return await ask({
+		message: `${message} (yes|no): `,
+		validate: input => input.trim() !== 'yes' && input.trim() !== 'no'
+			&& 'yes or no - try again'
+	}) === 'yes'
+}
+
 export async function askChoice({ message, options }){
 	let nr = 0
 	let optionsList = Object.entries(options)
