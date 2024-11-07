@@ -1,7 +1,7 @@
 import { deriveAddress, derivePublicKey, generateSeed } from '@xrplkit/wallet'
 import { ask, askChoice, askConfirm, cyan } from './terminal.js'
-import { bufferToMnemonic } from './rfc1751.js'
-import { decodeSeed } from 'ripple-address-codec'
+import { bufferToMnemonic, mnemonicToBuffer } from './rfc1751.js'
+import { decodeSeed, encodeSeed } from 'ripple-address-codec'
 
 export async function createWallet({ entropy }){
 	if(!entropy)
@@ -36,42 +36,40 @@ export async function createWallet({ entropy }){
 		address = deriveAddress({ seed })
 	}
 
+	
+
 	if(await askConfirm({ message: `password protect seed?` })){
-		
+		let encryptedSeed = seed
+
+		console.log(``)
+		console.log(`wallet address: ${address}`)
+		console.log(`wallet seed (encrypted): ${encryptedSeed}`)
+		console.log(`wallet mnemonic (encrypted): ${bufferToMnemonic(decodeSeed(encryptedSeed).bytes)}`)
+	}else{
+		console.log(``)
+		console.log(`wallet address: ${address}`)
+		console.log(`wallet seed: ${seed}`)
+		console.log(`wallet mnemonic: ${bufferToMnemonic(decodeSeed(seed).bytes)}`)
 	}
+}
 
-	let format = await askChoice({
-		message: 'output wallet seed as',
-		options: {
-			base58: 'base58 (xrp)',
-			mnemonic: 'mnemonic (rfc1751)'
-		}
-	})
+export async function checkWallet({ secret }){
+	let { address } = secret
+		? deriveCredentials(seed)
+		: await askSecret({ message: `enter wallet secret: ` })
 
-	console.log(``)
 	console.log(`wallet address: ${address}`)
-
-	switch(format){
-		case 'base58': {
-			console.log(`wallet seed: ${seed}`)
-			break
-		}
-		case 'mnemonic': {
-			console.log(`wallet mnemonic: ${bufferToMnemonic(decodeSeed(seed).bytes)}`)
-			break
-		}
-	}
 }
 
 export async function closeWallet(){
 	
 }
 
-export async function askSecret({ message = 'enter secret key' }){
+export async function askSecret({ message = `enter secret key: ` }){
 	let input = await ask({ 
 		message,
 		validate: input => !deriveCredentials(input) 
-			&& 'invalid key - try again'
+			&& `invalid ${input.includes(' ') ? `mnemonic` : `secret`} - try again`
 	})
 
 	process.stdout.moveCursor(0, -1)
@@ -81,12 +79,25 @@ export async function askSecret({ message = 'enter secret key' }){
 }
 
 function deriveCredentials(input){
-	try{
-		return {
-			seed: input,
-			address: deriveAddress({ seed: input })
-		}
-	}catch{
+	if(input.includes(' ')){
+		try{
+			let seed = encodeSeed(
+				mnemonicToBuffer(input),
+				'ed25519'
+			)
+			return {
+				seed,
+				address: deriveAddress({ seed })
+			}
+		}catch{}
+	}else{
+		try{
+			return {
+				seed: input,
+				address: deriveAddress({ seed: input })
+			}
+		}catch{}
+	
 		try{
 			return {
 				secretKey: input,

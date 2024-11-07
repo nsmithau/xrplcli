@@ -3,7 +3,7 @@ import { sign } from './sign.js'
 import { submit } from './submit.js'
 import { askChoice } from './terminal.js'
 import { createTx } from './tx.js'
-import { createWallet, closeWallet } from './wallet.js'
+import { createWallet, closeWallet, checkWallet } from './wallet.js'
 
 async function cli(args){
 	console.log(
@@ -23,6 +23,7 @@ async function cli(args){
 					sign: 'sign transaction',
 					submit: 'submit transaction',
 					create: 'create wallet',
+					check: 'check wallet',
 					close: 'close wallet',
 				}
 			})
@@ -46,6 +47,11 @@ async function cli(args){
 
 			case 'create': {
 				await createWallet({ entropy: null })
+				break
+			}
+
+			case 'check': {
+				await checkWallet({ secret: null })
 				break
 			}
 
