@@ -68,12 +68,10 @@ export async function closeWallet(){
 export async function askSecret({ message = `enter secret key: ` }){
 	let input = await ask({ 
 		message,
+		redactAfter: true,
 		validate: input => !deriveCredentials(input) 
 			&& `invalid ${input.includes(' ') ? `mnemonic` : `secret`} - try again`
 	})
-
-	process.stdout.moveCursor(0, -1)
-	process.stdout.write(`${message}: ${cyan('*'.repeat(input.length))}\n`)
 
 	return deriveCredentials(input)
 }

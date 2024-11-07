@@ -9,9 +9,14 @@ const rl = readline.createInterface({
 	output: process.stdout
 })
 
-export async function ask({ message, validate, preset }){
+export async function ask({ message, validate, preset, redactAfter = false }){
 	while(true){
 		let input = await prompt(message, preset)
+
+		if(redactAfter){
+			process.stdout.moveCursor(0, -1)
+			process.stdout.write(`${message}: ${cyan('*'.repeat(input.length))}\n`)
+		}
 
 		if(validate){
 			let issue = await validate(input)
