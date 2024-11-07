@@ -27,6 +27,8 @@ async function cli(args){
 					close: 'close wallet',
 				}
 			})
+		}else{
+			console.log('')
 		}
 
 		switch(action){
