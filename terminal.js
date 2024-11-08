@@ -4,14 +4,9 @@ const colorReset = '\x1b[0m'
 const colorCyan = '\x1b[36m'
 const colorRed = '\x1b[38;5;197m'
 
-const rl = readline.createInterface({
-	input: process.stdin,
-	output: process.stdout
-})
-
 export async function ask({ message, validate, preset, redactAfter = false }){
 	while(true){
-		let input = await prompt(message, preset)
+		let input = await prompt({ message, preset })
 
 		if(redactAfter && input.length > 0){
 			process.stdout.moveCursor(0, -1)
@@ -53,7 +48,9 @@ export async function askChoice({ message, options }){
 	console.log()
 
 	while(true){
-		let input = await prompt(`${colorReset}${message} (1-${optionsList.length}): ${colorCyan}`)
+		let input = await prompt({
+			message: `${colorReset}${message} (1-${optionsList.length}): ${colorCyan}`
+		})
 
 		if(input.length === 0){
 			console.log(`enter number between 1 and ${optionsList.length}`)
@@ -72,6 +69,11 @@ export async function askChoice({ message, options }){
 }
 
 export async function askJSON({ message }){
+	let rl = readline.createInterface({
+		input: process.stdin,
+		output: process.stdout
+	})
+
 	while(true){
 		try{
 			let resolve
@@ -123,29 +125,48 @@ export function red(text){
 	return `${colorRed}${text}${colorReset}`
 }
 
-function prompt(message, preset){
+function prompt({ message, preset, multiline }){
+	let resolve
+	let reject
+
+	let lines = []
+	let rl = readline.createInterface({
+		input: process.stdin,
+		output: process.stdout
+	})
+
+	let lineHandler = line => {
+		lines.push(line)
+
+		let text = lines.join('\n')
+
+		if(multiline && multiline(text))
+			return
+
+		rl.off('SIGINT', abortHandler)
+		rl.close()
+		process.stdout.write(colorReset)
+		resolve(text)
+	}
+
+	let abortHandler = () => {
+		rl.close()
+		process.stdout.write(colorReset)
+		reject({ abort: true })
+	}
+
+	rl.on('line', lineHandler)
+	rl.once('SIGINT', abortHandler)
+	rl.setPrompt(`${colorReset}${message}${colorCyan}`)
+	rl.prompt(true)
+
+	if(preset)
+		rl.write(preset)
+
 	return new Promise(
-		(resolve, reject) => {
-			let abortController = new AbortController()
-			let handleAbort = () => {
-				abortController.abort()
-				process.stdout.write(colorReset)
-				reject({ abort: true })
-			}
-
-			rl.question(
-				`${colorReset}${message}${colorCyan}`, 
-				{ signal: abortController.signal }
-			).catch(() => 0).then(input => {
-				process.stdout.write(colorReset)
-				rl.off('SIGINT', handleAbort)
-				resolve(input)
-			})
-
-			if(preset)
-				rl.write(preset)
-
-			rl.once('SIGINT', handleAbort)
+		(res, rej) => {
+			resolve = res
+			reject = rej
 		}
 	)
 }
