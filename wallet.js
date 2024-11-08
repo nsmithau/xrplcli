@@ -14,20 +14,22 @@ export async function createWallet({ entropy }){
 	let seed
 
 	if(entropyBytes.length < 16){
-		console.log(`got ${entropyBytes.length} bytes of user entropy, filling ${16 - entropyBytes.length} bytes with system entropy`)
+		if(entropyBytes.length !== 0)
+			console.log(`got ${entropyBytes.length} bytes of user entropy, filling ${16 - entropyBytes.length} bytes with system entropy`)
 
-		if(await askConfirm({ message: `should the wallet address contain something specific?` })){
-			vanityRegex = await ask({
-				message: `enter the criteria in regex format: `,
-				validate: input => {
-					try{
-						new RegExp(input).toString()
-					}catch(error){
-						return error.message
-					}
+		vanityRegex = await ask({
+			message: `enter wallet address criteria in regex format (optional): `,
+			validate: input => {
+				try{
+					new RegExp(input).toString()
+				}catch(error){
+					return error.message
 				}
-			})
-		}
+			}
+		})
+
+		if(vanityRegex.length === 0)
+			vanityRegex = undefined
 	}
 
 	if(vanityRegex){
@@ -38,14 +40,15 @@ export async function createWallet({ entropy }){
 	}
 
 	let decodedSeed = decodeSeed(seed).bytes
+	let passphrase = await ask({
+		message: `enter protection passphrase (optional): `,
+		redactAfter: true
+	})
 
-	if(await askConfirm({ message: `password protect seed?` })){
+	if(passphrase.length > 0){
 		let encryptedPayload = encrypt({
 			payload: decodedSeed,
-			passphrase: await ask({
-				message: `enter protection passphrase: `,
-				redactAfter: true
-			})
+			passphrase
 		})
 
 		console.log(``)
