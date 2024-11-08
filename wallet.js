@@ -1,6 +1,6 @@
 import { createCipheriv, createDecipheriv, pbkdf2Sync } from 'crypto'
 import { deriveAddress, derivePublicKey, generateSeed } from '@xrplkit/wallet'
-import { ask, askConfirm } from './terminal.js'
+import { ask, askConfirm, red } from './terminal.js'
 import { bufferToMnemonic, mnemonicToBuffer } from './rfc1751.js'
 import { decodeSeed, encodeSeed, codec } from 'ripple-address-codec'
 
@@ -73,14 +73,64 @@ export async function closeWallet(){
 }
 
 export async function askSecret({ message = `enter secret key: ` }){
-	let input = await ask({ 
-		message,
-		redactAfter: true,
-		validate: input => !deriveCredentials(input) 
-			&& `invalid ${input.includes(' ') ? `mnemonic` : `secret`} - try again`
-	})
+	while(true){
+		let secret
+		let encryptedSecret
+		let input = ''
+		
+		input = await ask({ 
+			message,
+			preset: input,
+			redactAfter: true,
+		})
+		input = input.trim()
 
-	return deriveCredentials(input)
+		try{
+			if(input.includes(' ')){
+				if(input.split(' ').length > 13){
+					encryptedSecret = mnemonicToBuffer(input)
+				}else{
+					secret = mnemonicToBuffer(input)
+				}
+			}else{
+				if(input.startsWith('es')){
+					encryptedSecret = decodeEncryptedSeed(input)
+				}else{
+					secret = decodeSeed(input).bytes
+				}
+			}
+		}catch(error){
+			console.log(red(`malformed key: ${error.message} - try again`))
+			continue
+		}
+
+		if(encryptedSecret){
+			while(true){
+				let passphrase = await ask({
+					message: `enter protection passphrase: `,
+					redactAfter: true
+				})
+
+				try{
+					secret = decrypt({
+						payload: encryptedSecret,
+						passphrase
+					})
+					encodeSeed(secret, 'ed25519')
+					break
+				}catch(error){
+					console.log(red(`wrong passphrase: ${error.message} - try again`))
+				}
+			}
+		}
+
+		let seed = encodeSeed(secret, 'ed25519')
+
+		return {
+			seed,
+			address: deriveAddress({ seed })
+		}
+	}
 }
 
 function encrypt({ payload, passphrase }){
@@ -104,7 +154,7 @@ function decrypt({ payload, passphrase }){
 	)
 
 	return Buffer.concat([
-		cipher.update(encryptedSeedBuffer), 
+		cipher.update(payload), 
 		cipher.final()
 	])
 }

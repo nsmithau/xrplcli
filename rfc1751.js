@@ -314,9 +314,14 @@ export function mnemonicToBuffer(mnemonic){
 		key = key.concat(subKey.slice(0, 8))
 	}
 
-	let bufferKey = swap128(Buffer.from(key))
+	if(key.length === 16)
+		key = swap128(key)
+	else if(key.length === 32)
+		key = [...swap128(key.slice(0, 16)), ...swap128(key.slice(16))]
+	else
+		throw new Error(`invalid mnemonic length`)
 
-	return bufferKey
+	return Buffer.from(key)
 }
 
 function getSubKey(words, index){
