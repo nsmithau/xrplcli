@@ -1,16 +1,16 @@
 import minimist from 'minimist'
 import { sign } from './sign.js'
 import { submit } from './submit.js'
-import { askChoice } from './terminal.js'
+import { askChoice, cyan } from './terminal.js'
 import { createTx } from './tx.js'
 import { createWallet, closeWallet, checkWallet } from './wallet.js'
 
 async function cli(args){
-	console.log(
+	console.log(cyan(
 ` __  _____ ___ _    ___ _    ___ 
  \\ \\/ / _ \\ _ \\ |  / __| |  |_ _|
   >  <|   /  _/ |_| (__| |__ | | 
- /_/\\_\\_|_\\_| |____\\___|____|___|`)
+ /_/\\_\\_|_\\_| |____\\___|____|___|`))
 														 
 	try{
 		let action = args._[0]
