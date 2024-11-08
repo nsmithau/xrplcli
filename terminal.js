@@ -4,6 +4,12 @@ const colorReset = '\x1b[0m'
 const colorCyan = '\x1b[36m'
 const colorRed = '\x1b[38;5;197m'
 
+const rl = readline.createInterface({
+	input: process.stdin,
+	output: process.stdout,
+	terminal: true
+})
+
 export async function ask({ message, validate, preset, redactAfter = false }){
 	while(true){
 		let input = await prompt({ message, preset })
@@ -128,37 +134,39 @@ export function red(text){
 function prompt({ message, preset, multiline }){
 	let resolve
 	let reject
-
 	let lines = []
-	let rl = readline.createInterface({
-		input: process.stdin,
-		output: process.stdout
-	})
 
 	let lineHandler = line => {
 		lines.push(line)
 
 		let text = lines.join('\n')
 
-		if(multiline && multiline(text))
+		if(multiline && multiline(text)){
+			rl.setPrompt('')
 			return
+		}
 
+		rl.off('line', lineHandler)
 		rl.off('SIGINT', abortHandler)
-		rl.close()
+		rl.pause()
 		process.stdout.write(colorReset)
 		resolve(text)
 	}
 
 	let abortHandler = () => {
-		rl.close()
+		rl.off('line', lineHandler)
+		rl.off('SIGINT', abortHandler)
+		rl.pause()
 		process.stdout.write(colorReset)
 		reject({ abort: true })
 	}
 
 	rl.on('line', lineHandler)
 	rl.once('SIGINT', abortHandler)
+
+	rl.resume()
 	rl.setPrompt(`${colorReset}${message}${colorCyan}`)
-	rl.prompt(true)
+	rl.prompt(false)
 
 	if(preset)
 		rl.write(preset)
