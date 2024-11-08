@@ -254,9 +254,16 @@ const BINARY = [
 ]
 
 export function bufferToMnemonic(buf) {
-	let key = [...swap128(buf)]
+	let key
 	let padding = []
 	let english = []
+
+	if(buf.length === 16)
+		key = [...swap128(buf)]
+	else if(buf.length === 32)
+		key = [...swap128(buf.slice(0, 16)), ...swap128(buf.slice(16))]
+	else
+		throw new Error(`invalid key length`)
 
 	for(let index = 0; index < (8 - (key.length % 8)) % 8; index++){
 		padding.push(0)

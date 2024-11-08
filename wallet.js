@@ -1,7 +1,8 @@
+import { createCipheriv, createDecipheriv, pbkdf2Sync } from 'crypto'
 import { deriveAddress, derivePublicKey, generateSeed } from '@xrplkit/wallet'
-import { ask, askChoice, askConfirm, cyan } from './terminal.js'
+import { ask, askConfirm } from './terminal.js'
 import { bufferToMnemonic, mnemonicToBuffer } from './rfc1751.js'
-import { decodeSeed, encodeSeed } from 'ripple-address-codec'
+import { decodeSeed, encodeSeed, codec } from 'ripple-address-codec'
 
 export async function createWallet({ entropy }){
 	if(!entropy)
@@ -36,20 +37,26 @@ export async function createWallet({ entropy }){
 		address = deriveAddress({ seed })
 	}
 
-	
+	let decodedSeed = decodeSeed(seed).bytes
 
 	if(await askConfirm({ message: `password protect seed?` })){
-		let encryptedSeed = seed
+		let encryptedPayload = encrypt({
+			payload: decodedSeed,
+			passphrase: await ask({
+				message: `enter protection passphrase: `,
+				redactAfter: true
+			})
+		})
 
 		console.log(``)
 		console.log(`wallet address: ${address}`)
-		console.log(`wallet seed (encrypted): ${encryptedSeed}`)
-		console.log(`wallet mnemonic (encrypted): ${bufferToMnemonic(decodeSeed(encryptedSeed).bytes)}`)
+		console.log(`wallet seed (encrypted): ${encodeEncryptedSeed(encryptedPayload)}`)
+		console.log(`wallet mnemonic (encrypted): ${bufferToMnemonic(encryptedPayload)}`)
 	}else{
 		console.log(``)
 		console.log(`wallet address: ${address}`)
 		console.log(`wallet seed: ${seed}`)
-		console.log(`wallet mnemonic: ${bufferToMnemonic(decodeSeed(seed).bytes)}`)
+		console.log(`wallet mnemonic: ${bufferToMnemonic(decodedSeed)}`)
 	}
 }
 
@@ -74,6 +81,49 @@ export async function askSecret({ message = `enter secret key: ` }){
 	})
 
 	return deriveCredentials(input)
+}
+
+function encrypt({ payload, passphrase }){
+	let cipher = createCipheriv(
+		'aes-128-ecb',
+		Buffer.from(psw2key(passphrase)), 
+		Buffer.from('')
+	)
+
+	return Buffer.concat([
+		cipher.update(payload), 
+		cipher.final()
+	])
+}
+
+function decrypt({ payload, passphrase }){
+	let cipher = createDecipheriv(
+		'aes-128-ecb',
+		Buffer.from(psw2key(passphrase)), 
+		Buffer.from('')
+	)
+
+	return Buffer.concat([
+		cipher.update(encryptedSeedBuffer), 
+		cipher.final()
+	])
+}
+
+function encodeEncryptedSeed(seed){
+	return codec.encode(
+		new Uint8Array(seed),
+		{
+			versions: [250, 106],
+			expectedLength: 32
+		}
+	)
+}
+
+function decodeEncryptedSeed(seed){
+	return codec.decode(seed, {
+		versions: [[250, 106]],
+		expectedLength: 32
+	}).bytes
 }
 
 function deriveCredentials(input){
@@ -105,4 +155,14 @@ function deriveCredentials(input){
 			}
 		}catch{}
 	}
+}
+
+function psw2key(passphrase){
+	return pbkdf2Sync(
+		Buffer.from(passphrase),
+		Buffer.from('XRP LEDGER WALLET SALT'),
+		1024,
+		16,
+		'sha1'
+	)
 }
