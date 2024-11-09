@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import minimist from 'minimist'
 import { sign } from './sign.js'
 import { submit } from './submit.js'

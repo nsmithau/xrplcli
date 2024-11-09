@@ -2,6 +2,9 @@
 	"name": "xrplcli",
 	"type": "module",
 	"version": "1.0.0",
+	"bin": {
+		"xrplcli": "./cli.js"
+	},
 	"dependencies": {
 		"@xrplkit/socket": "2.2.0",
 		"@xrplkit/submit": "1.2.0",
