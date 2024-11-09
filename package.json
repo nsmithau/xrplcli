@@ -3,7 +3,7 @@
 	"type": "module",
 	"version": "1.0.0",
 	"dependencies": {
-		"@xrplkit/socket": "2.1.0",
+		"@xrplkit/socket": "2.2.0",
 		"@xrplkit/submit": "1.2.0",
 		"@xrplkit/wallet": "1.2.0",
 		"minimist": "1.2.8",
