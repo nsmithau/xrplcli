@@ -118,6 +118,13 @@ export async function askMnemonic({ message, type }){
 	
 }
 
+export async function awaitInterrupt(){
+	await new Promise(resolve => {
+		rl.resume()
+		rl.once('SIGINT', () => rl.pause() + resolve())
+	})
+}
+
 export function cyan(text){
 	return `${colorCyan}${text}${colorReset}`
 }

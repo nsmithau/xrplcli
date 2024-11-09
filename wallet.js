@@ -1,6 +1,8 @@
+import os from 'os'
+import { Worker } from 'worker_threads'
 import { createCipheriv, createDecipheriv, pbkdf2Sync } from 'crypto'
 import { deriveAddress, derivePublicKey, generateSeed } from '@xrplkit/wallet'
-import { ask, red } from './terminal.js'
+import { ask, awaitInterrupt, cyan, red } from './terminal.js'
 import { keyToMnemonic, mnemonicToKey } from './rfc1751.js'
 import { decodeSeed, encodeSeed, codec } from 'ripple-address-codec'
 
@@ -10,7 +12,6 @@ export async function createWallet({ entropy }){
 
 	let entropyBytes = Array.from(Buffer.from(entropy)).slice(0, 16)
 	let vanityRegex
-	let address
 	let seed
 
 	if(entropyBytes.length < 16){
@@ -33,10 +34,13 @@ export async function createWallet({ entropy }){
 	}
 
 	if(vanityRegex){
-
+		seed = await performVanitySearch({
+			num: os.cpus().length,
+			criteria: vanityRegex,
+			entropy
+		})
 	}else{
 		seed = generateSeed({ entropy, algorithm: 'ed25519' })
-		address = deriveAddress({ seed })
 	}
 
 	let decodedSeed = decodeSeed(seed).bytes
@@ -52,12 +56,12 @@ export async function createWallet({ entropy }){
 		})
 
 		console.log(``)
-		console.log(`wallet address: ${address}`)
+		console.log(`wallet address: ${deriveAddress({ seed })}`)
 		console.log(`wallet seed (encrypted): ${encodeEncryptedSeed(encryptedPayload)}`)
 		console.log(`wallet mnemonic (encrypted): ${keyToMnemonic(encryptedPayload)}`)
 	}else{
 		console.log(``)
-		console.log(`wallet address: ${address}`)
+		console.log(`wallet address: ${deriveAddress({ seed })}`)
 		console.log(`wallet seed: ${seed}`)
 		console.log(`wallet mnemonic: ${keyToMnemonic(decodedSeed)}`)
 	}
@@ -73,6 +77,80 @@ export async function checkWallet({ secret }){
 
 export async function closeWallet(){
 	
+}
+
+async function performVanitySearch({ num, criteria, entropy }){
+	let workers = []
+	var wallets = []
+	let iters = []
+	let stopped = false
+
+	console.log(`performing vanity search with ${num} workers`)
+	console.log(``)
+
+	for(let i=0; i<num; i++){
+		let worker = new Worker(
+			'./worker.js', 
+			{
+				workerData: {
+					task: 'vanity', 
+					criteria, 
+					entropy
+				}
+			}
+		)
+
+		worker.on('message', ({ type, ...data }) => {
+			switch(type){
+				case 'progress':
+					iters[i] = data.iters
+					break
+
+				case 'found':
+					wallets.push(data)
+					process.stdout.clearLine()
+					console.log(`[${cyan(wallets.length)}] ${data.address}`)
+					break
+			}
+		})
+
+		iters.push(0)
+		workers.push(worker)
+	}
+
+	awaitInterrupt()
+		.then(() => stopped = true)
+
+	while(!stopped){
+		await new Promise(resolve => setTimeout(resolve, 25))
+
+		let itersSum = iters.reduce((s, i) => s + i, 0)
+
+		process.stdout.write(`searched ${itersSum} keypairs... press CTRL+C to stop\r`)
+	}
+
+	for(let worker of workers){
+		worker.terminate()
+	}
+
+	console.log('')
+
+	if(wallets.length === 0){
+		console.log('no wallets found')
+		process.exit()
+	}
+
+	if(wallets.length === 1){
+		return wallets[0].seed
+	}
+
+	let choice = await ask({
+		message: `select wallet from above (1-${wallets.length}): `,
+		validate: input => !(input >= 1 && input <= wallets.length)
+			&& 'invalid choice - try again'
+	})
+
+	return wallets[parseInt(choice) - 1].seed
 }
 
 export async function askSecret({ message = `enter secret key: ` }){
