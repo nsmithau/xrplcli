@@ -1,5 +1,5 @@
 import { isValidClassicAddress } from 'ripple-address-codec'
-import { encode } from 'ripple-binary-codec'
+import { decode, encode } from 'ripple-binary-codec'
 import { ask, askChoice, askConfirm, cyan, red } from './terminal.js'
 import { parseAmount } from './utils.js'
 import { connect } from './net.js'
@@ -158,8 +158,8 @@ export async function createTx({ type }){
 	let blob
 
 	while(true){
-		tx = { TransactionType: type, ...data }
-		blob = encode(tx)
+		blob = encode({ TransactionType: type, ...data })
+		tx = decode(blob)
 	
 		console.log('')
 		console.log('======= PLEASE CONFIRM =======')
