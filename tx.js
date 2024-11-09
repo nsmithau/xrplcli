@@ -49,7 +49,7 @@ const txSpec = {
 				type: 'UInt32',
 				optional: true
 			},
-			DeliverMax: {
+			Amount: {
 				type: 'Amount'
 			},
 			DeliverMin: {
