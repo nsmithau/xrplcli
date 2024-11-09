@@ -65,21 +65,21 @@ export async function signTx({ tx }){
 		let nextAction = await askChoice({
 			message: 'proceed with signed transaction',
 			options: {
-				qr: 'print blob as QR code',
 				submit: 'submit to network',
+				qr: 'print blob as QR code',
 				exit: 'exit',
 			}
 		})
 	
 		switch(nextAction){
-			case 'qr': {
-				await printQR({ blob: signedBlob })
-				break
-			}
-
 			case 'submit': {
 				await submit({ payload: signedBlob })
 				return
+			}
+
+			case 'qr': {
+				await printQR({ blob: signedBlob })
+				break
 			}
 	
 			case 'exit': {
