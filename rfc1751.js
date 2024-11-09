@@ -253,26 +253,59 @@ const BINARY = [
 	'1100', '1101', '1110', '1111'
 ]
 
-export function bufferToMnemonic(buf) {
-	let key
-	let padding = []
-	let english = []
 
-	if(buf.length === 16)
-		key = [...swap128(buf)]
-	else if(buf.length === 32)
-		key = [...swap128(buf.slice(0, 16)), ...swap128(buf.slice(16))]
+export function keyToMnemonic(key) {
+	if(key.length === 16)
+		key = swap128(key)
+	else if(key.length === 32)
+		key = swap256(key)
 	else
 		throw new Error(`invalid key length`)
 
-	for(let index = 0; index < (8 - (key.length % 8)) % 8; index++){
-		padding.push(0)
-	}
+	return encode(key)
+}
 
-	key = padding.concat(key)
+export function mnemonicToKey(mnemonic){
+	let key = decode(mnemonic)
+
+	if(key.length === 16)
+		key = swap128(key)
+	else if(key.length === 32)
+		key = swap256(key)
+	else
+		throw new Error(`invalid mnemonic length`)
+
+	return key
+}
+
+export function bufferToMnemonic(buffer) {
+    let lengthBuffer = Buffer.allocUnsafe(2)
+	let paddingBuffer = Buffer.alloc((8 - ((buffer.length + 2) % 8)) % 8)
+
+    lengthBuffer.writeUInt16BE(buffer.length, 0)
+
+    return encode(
+		Buffer.concat([
+			lengthBuffer,
+			paddingBuffer, 
+			buffer
+		])
+	)
+}
+
+export function mnemonicToBuffer(mnemonic){
+	let buffer = decode(mnemonic)
+	let length = buffer.readUint16BE(0)
+
+	return buffer.subarray(-length)
+}
+
+function encode(buffer){
+	let bytes = [...buffer]
+	let english = []
 	
-	for(let index = 0; index < key.length; index += 8){
-		let subKey = key.slice(index, index + 8)
+	for(let index = 0; index < bytes.length; index += 8){
+		let subKey = bytes.slice(index, index + 8)
 		let skbin = keyToBinary(subKey)
 		let parity = 0
 
@@ -290,10 +323,10 @@ export function bufferToMnemonic(buf) {
 
 	return english.join(' ')
 }
- 
-export function mnemonicToBuffer(mnemonic){
+
+function decode(mnemonic){
 	let words = mnemonic.split(' ')
-	let key = []
+	let bytes = []
 
 	for(let index = 0; index < words.length; index += 6){
 		let { subKey, word } = getSubKey(words, index)
@@ -311,17 +344,10 @@ export function mnemonicToBuffer(mnemonic){
 			throw new Error(`Parity error at ${word}`)
 		}
 
-		key = key.concat(subKey.slice(0, 8))
+		bytes = bytes.concat(subKey.slice(0, 8))
 	}
 
-	if(key.length === 16)
-		key = swap128(key)
-	else if(key.length === 32)
-		key = [...swap128(key.slice(0, 16)), ...swap128(key.slice(16))]
-	else
-		throw new Error(`invalid mnemonic length`)
-
-	return Buffer.from(key)
+	return Buffer.from(bytes)
 }
 
 function getSubKey(words, index){
@@ -419,6 +445,12 @@ function swap64(arr){
 
 function swap128(arr) {
 	let reversedBytes = swap64(arr)
-	
 	return concat([reversedBytes.slice(8, 16), reversedBytes.slice(0, 8)])
+}
+
+function swap256(arr) {
+	let firstHalf = swap128(arr.slice(0, 16))
+    let secondHalf = swap128(arr.slice(16, 32))
+
+    return concat([secondHalf, firstHalf])
 }

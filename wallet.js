@@ -1,7 +1,7 @@
 import { createCipheriv, createDecipheriv, pbkdf2Sync } from 'crypto'
 import { deriveAddress, derivePublicKey, generateSeed } from '@xrplkit/wallet'
-import { ask, askConfirm, red } from './terminal.js'
-import { bufferToMnemonic, mnemonicToBuffer } from './rfc1751.js'
+import { ask, red } from './terminal.js'
+import { keyToMnemonic, mnemonicToKey } from './rfc1751.js'
 import { decodeSeed, encodeSeed, codec } from 'ripple-address-codec'
 
 export async function createWallet({ entropy }){
@@ -54,12 +54,12 @@ export async function createWallet({ entropy }){
 		console.log(``)
 		console.log(`wallet address: ${address}`)
 		console.log(`wallet seed (encrypted): ${encodeEncryptedSeed(encryptedPayload)}`)
-		console.log(`wallet mnemonic (encrypted): ${bufferToMnemonic(encryptedPayload)}`)
+		console.log(`wallet mnemonic (encrypted): ${keyToMnemonic(encryptedPayload)}`)
 	}else{
 		console.log(``)
 		console.log(`wallet address: ${address}`)
 		console.log(`wallet seed: ${seed}`)
-		console.log(`wallet mnemonic: ${bufferToMnemonic(decodedSeed)}`)
+		console.log(`wallet mnemonic: ${keyToMnemonic(decodedSeed)}`)
 	}
 }
 
@@ -91,9 +91,9 @@ export async function askSecret({ message = `enter secret key: ` }){
 		try{
 			if(input.includes(' ')){
 				if(input.split(' ').length > 13){
-					encryptedSecret = mnemonicToBuffer(input)
+					encryptedSecret = mnemonicToKey(input)
 				}else{
-					secret = mnemonicToBuffer(input)
+					secret = mnemonicToKey(input)
 				}
 			}else{
 				if(input.startsWith('es')){
