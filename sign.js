@@ -1,45 +1,48 @@
 import { sign as libSignTx } from '@xrplkit/submit'
-import { encode } from 'ripple-binary-codec'
-import qrcode from 'qrcode-terminal'
-import { ask, askChoice, askJSON, askMnemonic } from './terminal.js'
+import { encode, decode } from 'ripple-binary-codec'
+import { askChoice, askPayload, red } from './terminal.js'
 import { askSecret } from './wallet.js'
 import { submit } from './submit.js'
+import { printQR } from './qr.js'
+import { mnemonicToTx } from './tx.js'
 
 
-export async function sign({ format }){
-	if(!format){
-		format = await askChoice({
-			message: 'payload type',
-			options: {
-				tx_json: 'transaction (json)',
-				tx_blob: 'transaction (blob)',
-				tx_mnemonic: 'transaction (mnemonic)',
-				msg_txt: 'message (text)',
-				msg_blob: 'message (blob)'
-			}
+export async function sign({ }){
+	let preset
+
+	while(true){
+		let tx
+		let { txJson, txBlob, txMnemonic } = await askPayload({
+			message: `enter payload to sign: `,
+			preset
 		})
-	}
+	
+		if(txJson){
+			tx = txJson
+		}else if(txBlob){
+			// todo
+		}else if(txMnemonic){
+			try{
+				tx = mnemonicToTx(txMnemonic)
+				tx = decode(tx.toString('hex'))
+			}catch(error){
+				console.log(red(`bad mnemonic: ${error.message} - try again`))
+				preset = txMnemonic
+				continue
+			}
 
-	switch(format){
-		case 'tx_json': {
-			return await signTx({
-				tx: await askJSON({
-					message: 'transaction to sign (json): '
-				})
-			})
+			console.log('')
+			console.log('====== SIGNABLE PAYLOAD ======')
+			console.log(JSON.stringify(tx, null, 4))
+			console.log('==============================')
+			console.log('')
 		}
-		case 'tx_mnemonic': {
-			return await signTx({
-				tx: await askMnemonic({
-					message: 'transaction to sign (mnemonic): ',
-					type: 'tx'
-				})
-			})
-		}
+
+		return await signTx({ tx })
 	}
 }
 
-async function signTx({ tx }){
+export async function signTx({ tx }){
 	let credentails = await askSecret({ message: 'enter secret key to sign: ' })
 	let signed
 

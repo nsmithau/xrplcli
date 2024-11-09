@@ -74,47 +74,42 @@ export async function askChoice({ message, options }){
 	}
 }
 
-export async function askJSON({ message }){
-	let rl = readline.createInterface({
-		input: process.stdin,
-		output: process.stdout
-	})
+export async function askPayload({ message, preset }){
+	let input = preset
 
 	while(true){
-		try{
-			let resolve
-			let lines = []
-			let lineHandler = line => {
-				lines.push(line)
+		input = await prompt({
+			message,
+			preset: input,
+			multiline: input => {
+				if(input.endsWith('\n'))
+					return false
 
-				let text = lines.join('\n').trim()
-				let complete = true
-
-				try{
-					JSON.parse(text)
-				}catch{
-					complete = false
-				}
-
-				if(complete || line.length === 0){
-					rl.off('line', lineHandler)
-					resolve(text)
+				if(input.trim().startsWith('{')){
+					try{
+						JSON.parse(input)
+					}catch{
+						return true
+					}
 				}
 			}
+		})
 
-			rl.on('line', lineHandler)
-			rl.setPrompt(`${colorReset}${message}${colorCyan}`)
-			rl.prompt(true)
+		input = input.trim()
 
-			return JSON.parse(
-				await new Promise(res => resolve = res)
-					.then(result => (process.stdout.write(colorReset), result))
-			)
-		}catch(e){
-			if(e instanceof SyntaxError)
-				console.log(`${colorRed}input is not valid JSON - try again${colorReset}\n`)
-			else
-				throw e
+		if(input.startsWith('{')){
+			try{
+				return { txJson: JSON.parse(input) }
+			}catch(e){
+				if(e instanceof SyntaxError)
+					console.log(red(`input is not valid JSON - try again\n`))
+				else
+					throw e
+			}
+		}else if(/^[0-9A-F]$/.test(input.toUpperCase())){
+			return { txBlob: input }
+		}else{
+			return { txMnemonic: input }
 		}
 	}
 }
