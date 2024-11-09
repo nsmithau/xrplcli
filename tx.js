@@ -129,7 +129,7 @@ export async function createTx({ type }){
 				account: data.Account
 			})
 
-			data.Sequence = account_data.Sequence + 1
+			data.Sequence = account_data.Sequence
 			console.log(data.Sequence.toString())
 
 			process.stdout.write(`reading open ledger fee... `)
