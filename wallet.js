@@ -1,10 +1,17 @@
 import os from 'os'
+import path from 'path'
+import { fileURLToPath } from 'url'
 import { Worker } from 'worker_threads'
 import { createCipheriv, createDecipheriv, pbkdf2Sync } from 'crypto'
 import { deriveAddress, derivePublicKey, generateSeed } from '@xrplkit/wallet'
 import { ask, awaitInterrupt, cyan, red } from './terminal.js'
 import { keyToMnemonic, mnemonicToKey } from './rfc1751.js'
 import { decodeSeed, encodeSeed, codec } from 'ripple-address-codec'
+
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
 
 export async function createWallet({ entropy }){
 	if(!entropy)
@@ -90,7 +97,7 @@ async function performVanitySearch({ num, criteria, entropy }){
 
 	for(let i=0; i<num; i++){
 		let worker = new Worker(
-			'./worker.js', 
+			path.join(__dirname, 'worker.js'), 
 			{
 				workerData: {
 					task: 'vanity', 
