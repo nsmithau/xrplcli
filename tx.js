@@ -1,5 +1,9 @@
 import { isValidClassicAddress } from 'ripple-address-codec'
-import { ask, askChoice, cyan } from './terminal.js'
+import { encode } from 'ripple-binary-codec'
+import { ask, askChoice, askConfirm, cyan, red } from './terminal.js'
+import { parseAmount } from './utils.js'
+import { connect } from './net.js'
+import { signTx } from './sign.js'
 
 const txCommonSpec = {
 	fields: {
@@ -42,6 +46,7 @@ const txSpec = {
 			},
 			DestinationTag: {
 				type: 'UInt32',
+				optional: true
 			},
 			DeliverMax: {
 				type: 'Amount'
@@ -122,22 +127,42 @@ async function askField({ key, type, optional, preset }){
 			break
 		}
 		case 'UInt32': {
-			validate = input => !/^[0-9]$/.test(input)
+			validate = input => !/^[0-9]+$/.test(input)
 				&& 'not a valid integer number - try again'
+			break
+		}
+		case 'Amount': {
+			validate = input => {
+				try{
+					parseAmount(input)
+				}catch(error){
+					return `${error.message} - try again`
+				}
+			}
 			break
 		}
 	}
 
-	if(optional && validate)
+	if(optional && validate){
+		let validateRequired = validate
+
 		validate = input => input.length === 0
 			? undefined
-			: validate(input)
+			: validateRequired(input)
+	}
 
 	let value = await ask({ message, preset, validate })
+
+	if(optional && !value)
+		return
 
 	switch(type){
 		case 'UInt32': {
 			value = parseInt(value)
+			break
+		}
+		case 'Amount': {
+			value = parseAmount(value)
 			break
 		}
 	}

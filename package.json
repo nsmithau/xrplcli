@@ -5,6 +5,7 @@
 	"dependencies": {
 		"@xrplkit/socket": "2.2.0",
 		"@xrplkit/submit": "1.2.0",
+		"@xrplkit/tokens": "^1.0.1",
 		"@xrplkit/wallet": "1.2.0",
 		"minimist": "1.2.8",
 		"qrcode-terminal": "0.12.0",
