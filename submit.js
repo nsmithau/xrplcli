@@ -1,7 +1,17 @@
+import { decode, encode } from 'ripple-binary-codec'
 import { connect } from './net.js'
-import { red } from './terminal.js'
+import { askPayload, red } from './terminal.js'
 
-export async function submit({ payload }){
+export async function submit({ blob }){
+	if(!blob){
+		let { txJson, txBlob } = await askPayload({ message: `enter tx to submit (json|hex): ` })
+
+		if(txJson)
+			blob = encode(txJson)
+		else
+			blob = txBlob
+	}
+
 	let socket = await connect()
 
 	process.stdout.write('submitting... ')
@@ -9,7 +19,7 @@ export async function submit({ payload }){
 	try{
 		let result = await socket.request({
 			command: 'submit',
-			tx_blob: payload
+			tx_blob: blob
 		})
 
 		console.log(`${result.engine_result}`)
