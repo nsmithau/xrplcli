@@ -106,7 +106,7 @@ export async function askPayload({ message, preset }){
 				else
 					throw e
 			}
-		}else if(/^[0-9A-F]$/.test(input.toUpperCase())){
+		}else if(/^[0-9A-F]+$/.test(input.toUpperCase())){
 			return { txBlob: input }
 		}else{
 			return { txMnemonic: input }
