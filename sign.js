@@ -16,7 +16,7 @@ export async function sign({ }){
 			message: `enter payload to sign: `,
 			preset
 		})
-	
+
 		if(txJson){
 			tx = txJson
 		}else if(txBlob){
@@ -49,7 +49,8 @@ export async function signTx({ tx }){
 	try{
 		signed = await libSignTx({ tx, ...credentails })
 	}catch(error){
-		console.log(error)
+		console.log(red(`failed to sign: ${error.message}`))
+		return
 	}
 
 	let signedJson = JSON.stringify(signed, null, 4)
@@ -73,7 +74,7 @@ export async function signTx({ tx }){
 	
 		switch(nextAction){
 			case 'submit': {
-				await submit({ payload: signedBlob })
+				await submit({ blob: signedBlob })
 				return
 			}
 
