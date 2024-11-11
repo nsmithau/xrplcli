@@ -64,7 +64,7 @@ export async function createWallet({ entropy }){
 
 		console.log(``)
 		console.log(`wallet address: ${deriveAddress({ seed })}`)
-		console.log(`wallet seed (encrypted): ${encodeEncryptedSeed(encryptedPayload)}`)
+		console.log(`wallet seed (encrypted): ${encodeSeed(encryptedPayload, 'ed25519')}`)
 		console.log(`wallet mnemonic (encrypted): ${keyToMnemonic(encryptedPayload)}`)
 	}else{
 		console.log(``)
@@ -163,7 +163,6 @@ async function performVanitySearch({ num, criteria, entropy }){
 export async function askSecret({ message = `enter secret key: ` }){
 	while(true){
 		let secret
-		let encryptedSecret
 		let input = ''
 		
 		input = await ask({ 
@@ -175,40 +174,33 @@ export async function askSecret({ message = `enter secret key: ` }){
 
 		try{
 			if(input.includes(' ')){
-				if(input.split(' ').length > 13){
-					encryptedSecret = mnemonicToKey(input)
-				}else{
-					secret = mnemonicToKey(input)
-				}
+				secret = mnemonicToKey(input)
 			}else{
-				if(input.startsWith('es')){
-					encryptedSecret = decodeEncryptedSeed(input)
-				}else{
-					secret = decodeSeed(input).bytes
-				}
+				secret = decodeSeed(input).bytes
 			}
 		}catch(error){
 			console.log(red(`malformed key: ${error.message} - try again`))
 			continue
 		}
 
-		if(encryptedSecret){
-			while(true){
-				let passphrase = await ask({
-					message: `enter protection passphrase: `,
-					redactAfter: true
-				})
+		while(true){
+			let passphrase = await ask({
+				message: `enter protection passphrase: `,
+				redactAfter: true
+			})
 
-				try{
-					secret = decrypt({
-						payload: encryptedSecret,
-						passphrase
-					})
-					encodeSeed(secret, 'ed25519')
-					break
-				}catch(error){
-					console.log(red(`wrong passphrase: ${error.message} - try again`))
-				}
+			if(passphrase.length === 0)
+				break
+
+			try{
+				secret = decrypt({
+					payload: secret,
+					passphrase
+				})
+				encodeSeed(secret, 'ed25519')
+				break
+			}catch(error){
+				console.log(red(`wrong passphrase: ${error.message} - try again`))
 			}
 		}
 
@@ -228,6 +220,8 @@ function encrypt({ payload, passphrase }){
 		Buffer.from('')
 	)
 
+	cipher.setAutoPadding(false)
+
 	return Buffer.concat([
 		cipher.update(payload), 
 		cipher.final()
@@ -241,27 +235,12 @@ function decrypt({ payload, passphrase }){
 		Buffer.from('')
 	)
 
+	cipher.setAutoPadding(false)
+
 	return Buffer.concat([
 		cipher.update(payload), 
 		cipher.final()
 	])
-}
-
-function encodeEncryptedSeed(seed){
-	return codec.encode(
-		new Uint8Array(seed),
-		{
-			versions: [250, 106],
-			expectedLength: 32
-		}
-	)
-}
-
-function decodeEncryptedSeed(seed){
-	return codec.decode(seed, {
-		versions: [[250, 106]],
-		expectedLength: 32
-	}).bytes
 }
 
 function deriveCredentials(input){
