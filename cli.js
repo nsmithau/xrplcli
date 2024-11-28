@@ -6,6 +6,7 @@ import { submit } from './submit.js'
 import { askChoice, cyan } from './terminal.js'
 import { createTx } from './tx.js'
 import { createWallet, closeWallet, checkWallet } from './wallet.js'
+import { useNode } from './net.js'
 
 async function cli(args){
 	console.log(cyan(
@@ -13,6 +14,12 @@ async function cli(args){
  \\ \\/ / _ \\ _ \\ |  / __| |  |_ _|
   >  <|   /  _/ |_| (__| |__ | | 
  /_/\\_\\_|_\\_| |____\\___|____|___|`))
+
+	if(args.node){
+		console.log(``)
+		console.log(`using node ${args.node}`)
+		useNode({ url: args.node })
+	}
 														 
 	try{
 		let action = args._[0]

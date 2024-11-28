@@ -1,6 +1,12 @@
 import createSocket from '@xrplkit/socket'
 
-export async function connect({ url = 'wss://s1.ripple.com' } = {}){
+let nodeUrl = 'wss://s1.ripple.com'
+
+export function useNode({ url }){
+	nodeUrl = url
+}
+
+export async function connect({ url = nodeUrl } = {}){
 	let cleanUrl = url.replace('ws://', '').replace('wss://', '')
 	let socket = createSocket({ url, apiVersion: 2 })
 
