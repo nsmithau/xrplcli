@@ -2,11 +2,11 @@ import os from 'os'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { Worker } from 'worker_threads'
-import { createCipheriv, createDecipheriv, pbkdf2Sync } from 'crypto'
+import { createHash } from 'crypto'
 import { deriveAddress, derivePublicKey, generateSeed } from '@xrplkit/wallet'
-import { ask, awaitInterrupt, cyan, red } from './terminal.js'
+import { ask, awaitInterrupt, cyan } from './terminal.js'
 import { keyToMnemonic, mnemonicToKey } from './rfc1751.js'
-import { decodeSeed, encodeSeed, codec } from 'ripple-address-codec'
+import { decodeSeed, encodeSeed } from 'ripple-address-codec'
 
 
 const __filename = fileURLToPath(import.meta.url)
@@ -55,29 +55,10 @@ export async function createWallet({ entropy }){
 		seed = generateSeed({ entropy, algorithm: 'ed25519' })
 	}
 
-	let decodedSeed = decodeSeed(seed).bytes
-	let passphrase = await ask({
-		message: `protection passphrase`,
-		hint: `optional`,
-		redactAfter: true
-	})
-
-	if(passphrase.length > 0){
-		let encryptedPayload = encrypt({
-			payload: decodedSeed,
-			passphrase
-		})
-
-		console.log(``)
-		console.log(`wallet address: ${deriveAddress({ seed })}`)
-		console.log(`wallet seed (encrypted): ${encodeSeed(encryptedPayload, 'ed25519')}`)
-		console.log(`wallet mnemonic (encrypted): ${keyToMnemonic(encryptedPayload)}`)
-	}else{
-		console.log(``)
-		console.log(`wallet address: ${deriveAddress({ seed })}`)
-		console.log(`wallet seed: ${seed}`)
-		console.log(`wallet mnemonic: ${keyToMnemonic(decodedSeed)}`)
-	}
+	console.log(``)
+	console.log(`wallet address: ${cyan(deriveAddress({ seed }))}`)
+	console.log(`wallet seed: ${cyan(seed)}`)
+	console.log(`wallet mnemonic: ${cyan(keyToMnemonic(decodeSeed(seed).bytes))}`)
 }
 
 export async function checkWallet({ secret }){
@@ -170,87 +151,49 @@ async function performVanitySearch({ num, criteria, entropy }){
 }
 
 export async function askSecret({ message = `secret key` }){
-	while(true){
-		let secret
-		let input = ''
-		
-		input = await ask({ 
-			message,
-			preset: input,
-			redactAfter: true,
-		})
+	let input = ''
+	let parse = input => {
 		input = input.trim()
 
 		try{
 			if(input.includes(' ')){
-				secret = mnemonicToKey(input)
+				return {
+					type: 'mnemonic',
+					bytes: mnemonicToKey(input)
+				}
 			}else{
-				secret = decodeSeed(input).bytes
+				return {
+					type: 'seed',
+					bytes: decodeSeed(input).bytes
+				}
 			}
-		}catch(error){
-			console.log(red(`malformed key: ${error.message} - try again`))
-			continue
-		}
-
-		while(true){
-			let passphrase = await ask({
-				message: `protection passphrase`,
-				hint: `optional`,
-				redactAfter: true
-			})
-
-			if(passphrase.length === 0)
-				break
-
-			try{
-				secret = decrypt({
-					payload: secret,
-					passphrase
-				})
-				encodeSeed(secret, 'ed25519')
-				break
-			}catch(error){
-				console.log(red(`wrong passphrase: ${error.message} - try again`))
+		}catch{
+			return {
+				type: 'passphrase',
+				bytes: createHash('sha512')
+					.update(input)
+					.digest()
+					.slice(0, 16)
 			}
-		}
-
-		let seed = encodeSeed(secret, 'ed25519')
-
-		return {
-			seed,
-			address: deriveAddress({ seed })
 		}
 	}
-}
+	
+	input = await ask({
+		message: input => input.length === 0
+			? message
+			: `${message} (${parse(input).type})`,
+		hint: `(seed, mnemonic or passphrase)`,
+		preset: input,
+		required: true,
+		redactAfter: true
+	})
 
-function encrypt({ payload, passphrase }){
-	let cipher = createCipheriv(
-		'aes-128-ecb',
-		Buffer.from(psw2key(passphrase)), 
-		Buffer.from('')
-	)
+	let seed = encodeSeed(parse(input).bytes, 'ed25519')
 
-	cipher.setAutoPadding(false)
-
-	return Buffer.concat([
-		cipher.update(payload), 
-		cipher.final()
-	])
-}
-
-function decrypt({ payload, passphrase }){
-	let cipher = createDecipheriv(
-		'aes-128-ecb',
-		Buffer.from(psw2key(passphrase)), 
-		Buffer.from('')
-	)
-
-	cipher.setAutoPadding(false)
-
-	return Buffer.concat([
-		cipher.update(payload), 
-		cipher.final()
-	])
+	return {
+		seed,
+		address: deriveAddress({ seed })
+	}
 }
 
 function deriveCredentials(input){
@@ -282,14 +225,4 @@ function deriveCredentials(input){
 			}
 		}catch{}
 	}
-}
-
-function psw2key(passphrase){
-	return pbkdf2Sync(
-		Buffer.from(passphrase),
-		Buffer.from('XRP LEDGER WALLET SALT'),
-		1024,
-		16,
-		'sha1'
-	)
 }

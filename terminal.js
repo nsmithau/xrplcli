@@ -7,14 +7,24 @@ const colorReset = '\x1b[0m'
 const colorCyan = '\x1b[36m'
 const colorRed = '\x1b[38;5;197m'
 
-export async function ask({ message, validate, preset, hint, redactAfter = false }){
+export async function ask({ message, validate, preset, hint, note, required = false, redactAfter = false }){
 	while(true){
 		let input
 		let prompt = new Input({
-			message,
+			message: typeof message === 'string'
+				? message
+				: prompt => message(prompt.input),
 			hint,
 			initial: preset,
-			validate,
+			required,
+			validate: required
+				? input => input.length === 0
+					? 'required'
+					: (validate ? validate(input) : true)
+				: validate,
+			footer: note
+				? prompt => note(prompt.input)
+				: undefined
 		})
 	
 		try{
@@ -27,7 +37,11 @@ export async function ask({ message, validate, preset, hint, redactAfter = false
 		}
 
 		if(redactAfter && input.length > 0){
-			process.stdout.moveCursor(message.length + 5, -1)
+			let messageLength = typeof message === 'string'
+				? message.length
+				: message(input).length
+
+			process.stdout.moveCursor(messageLength + 5, -1)
 			process.stdout.write(`${cyan('*'.repeat(input.length))}\n`)
 		}
 
