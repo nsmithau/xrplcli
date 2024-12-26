@@ -15,7 +15,10 @@ const __dirname = path.dirname(__filename)
 
 export async function createWallet({ entropy }){
 	if(!entropy)
-		entropy = await ask({ message: `enter entropy for seed (optional): ` })
+		entropy = await ask({
+			message: `entropy for seed`,
+			hint: `optional`
+		})
 
 	let entropyBytes = Array.from(Buffer.from(entropy)).slice(0, 16)
 	let vanityRegex
@@ -26,10 +29,12 @@ export async function createWallet({ entropy }){
 			console.log(`got ${entropyBytes.length} bytes of user entropy, filling ${16 - entropyBytes.length} bytes with system entropy`)
 
 		vanityRegex = await ask({
-			message: `enter wallet address criteria in regex format (optional): `,
+			message: `wallet address criteria in regex format`,
+			hint: `optional`,
 			validate: input => {
 				try{
 					new RegExp(input).toString()
+					return true
 				}catch(error){
 					return error.message
 				}
@@ -52,7 +57,8 @@ export async function createWallet({ entropy }){
 
 	let decodedSeed = decodeSeed(seed).bytes
 	let passphrase = await ask({
-		message: `enter protection passphrase (optional): `,
+		message: `protection passphrase`,
+		hint: `optional`,
 		redactAfter: true
 	})
 
@@ -77,8 +83,9 @@ export async function createWallet({ entropy }){
 export async function checkWallet({ secret }){
 	let { address } = secret
 		? deriveCredentials(seed)
-		: await askSecret({ message: `enter wallet secret: ` })
+		: await askSecret({ message: `wallet secret` })
 
+	console.log(``)
 	console.log(`wallet address: ${address}`)
 }
 
@@ -92,6 +99,7 @@ async function performVanitySearch({ num, criteria, entropy }){
 	let iters = []
 	let stopped = false
 
+	console.log(``)
 	console.log(`performing vanity search with ${num} workers`)
 	console.log(``)
 
@@ -152,15 +160,16 @@ async function performVanitySearch({ num, criteria, entropy }){
 	}
 
 	let choice = await ask({
-		message: `select wallet from above (1-${wallets.length}): `,
-		validate: input => !(input >= 1 && input <= wallets.length)
-			&& 'invalid choice - try again'
+		message: `select wallet from above (1-${wallets.length})`,
+		validate: input => input >= 1 && input <= wallets.length
+			? true
+			: 'invalid choice - try again'
 	})
 
 	return wallets[parseInt(choice) - 1].seed
 }
 
-export async function askSecret({ message = `enter secret key: ` }){
+export async function askSecret({ message = `secret key` }){
 	while(true){
 		let secret
 		let input = ''
@@ -185,7 +194,8 @@ export async function askSecret({ message = `enter secret key: ` }){
 
 		while(true){
 			let passphrase = await ask({
-				message: `enter protection passphrase: `,
+				message: `protection passphrase`,
+				hint: `optional`,
 				redactAfter: true
 			})
 

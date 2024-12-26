@@ -5,8 +5,9 @@ import { ask } from './terminal.js'
 export async function printQR({ blob }){
 	let parts = await ask({
 		message: 'split into multiple QR codes (1-4): ',
-		validate: input => !(parseInt(input) >= 1 && parseInt(input) <= 4)
-			&& 'must be between 1 and 4 parts - try again'
+		validate: input => parseInt(input) >= 1 && parseInt(input) <= 4
+			? true
+			: 'must be between 1 and 4 parts - try again'
 	})
 	let chunk = Math.ceil(blob.length / parseInt(parts))
 	let offset = 0

@@ -1,6 +1,6 @@
 import { sign as libSignTx } from '@xrplkit/submit'
 import { encode, decode } from 'ripple-binary-codec'
-import { askChoice, askPayload, red } from './terminal.js'
+import { askChoice, askPayload, cyan, red } from './terminal.js'
 import { askSecret } from './wallet.js'
 import { submit } from './submit.js'
 import { printQR } from './qr.js'
@@ -13,7 +13,8 @@ export async function sign({ }){
 	while(true){
 		let tx
 		let { txJson, txBlob, txMnemonic } = await askPayload({
-			message: `enter payload to sign: `,
+			message: `payload to sign`,
+			hint: `(json, hex or mnemonic)`,
 			preset
 		})
 
@@ -33,7 +34,7 @@ export async function sign({ }){
 
 			console.log('')
 			console.log('====== SIGNABLE PAYLOAD ======')
-			console.log(JSON.stringify(tx, null, 4))
+			console.log(cyan(JSON.stringify(tx, null, 4)))
 			console.log('==============================')
 			console.log('')
 		}
@@ -43,7 +44,7 @@ export async function sign({ }){
 }
 
 export async function signTx({ tx }){
-	let credentails = await askSecret({ message: 'enter secret key to sign: ' })
+	let credentails = await askSecret({ message: 'secret key to sign' })
 	let signed
 
 	try{
@@ -57,12 +58,13 @@ export async function signTx({ tx }){
 	let signedBlob = encode(signed)
 
 	console.log()
-	console.log(`signed blob:\n${signedBlob}`)
+	console.log(`signed blob:\n${cyan(signedBlob)}`)
 	console.log()
-	console.log(`signed json:\n${signedJson}`)
-	console.log()
+	console.log(`signed json:\n${cyan(signedJson)}`)
 
 	while(true){
+		console.log()
+
 		let nextAction = await askChoice({
 			message: 'proceed with signed transaction',
 			options: {
@@ -84,7 +86,6 @@ export async function signTx({ tx }){
 			}
 	
 			case 'exit': {
-				console.log('bye')
 				process.exit(0)
 			}
 		}

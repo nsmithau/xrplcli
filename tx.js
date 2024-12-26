@@ -1,76 +1,198 @@
 import { isValidClassicAddress } from 'ripple-address-codec'
 import { decode, encode } from 'ripple-binary-codec'
-import { ask, askChoice, askConfirm, cyan, red } from './terminal.js'
+import { ask, askChoice, askConfirm, askForm, cyan, red } from './terminal.js'
 import { parseAmount } from './utils.js'
 import { connect } from './net.js'
 import { signTx } from './sign.js'
 import { bufferToMnemonic, mnemonicToBuffer } from './rfc1751.js'
 
 const txCommonSpec = {
-	fields: {
-		Account: {
+	fields: [
+		{
+			key: 'Account',
 			type: 'AccountID'
+		},
+		{
+			key: 'Sequence',
+			type: 'UInt32',
+			autofillable: true
+		},
+		{
+			key: 'Fee',
+			type: 'Amount',
+			autofillable: true
 		}
-	}
+	],
+	flags: []
 }
 
 const txSpec = {
-	AccountSet: {},
-	AccountDelete: {},
-	AMMBid: {},
-	AMMCreate: {},
-	AMMDelete: {},
-	AMMDeposit: {},
-	AMMVote: {},
-	AMMWithdraw: {},
-	CheckCancel: {},
-	CheckCash: {},
-	CheckCreate: {},
-	Clawback: {},
-	DepositPreauth: {},
-	DIDDelete: {},
-	DIDSet: {},
-	EscrowCancel: {},
-	EscrowCreate: {},
-	EscrowFinish: {},
-	NFTokenAcceptOffer: {},
-	NFTokenBurn: {},
-	NFTokenCancelOffer: {},
-	NFTokenCreateOffer: {},
-	NFTokenMint: {},
-	OfferCancel: {},
-	OfferCreate: {},
+	AccountSet: {
+		fields: [
+			{
+				key: 'SetFlag',
+				type: 'UInt32',
+				optional: true
+			}
+		]
+	},
+	AccountDelete: {
+		fields: []
+	},
+	AMMBid: {
+		fields: []
+	},
+	AMMCreate: {
+		fields: []
+	},
+	AMMDelete: {
+		fields: []
+	},
+	AMMDeposit: {
+		fields: []
+	},
+	AMMVote: {
+		fields: []
+	},
+	AMMWithdraw: {
+		fields: []
+	},
+	CheckCancel: {
+		fields: []
+	},
+	CheckCash: {
+		fields: []
+	},
+	CheckCreate: {
+		fields: []
+	},
+	Clawback: {
+		fields: []
+	},
+	DepositPreauth: {
+		fields: [
+			{
+				key: 'Authorize',
+				type: 'AccountID',
+				optional: true
+			},
+			{
+				key: 'Deauthorize',
+				type: 'AccountID',
+				optional: true
+			}
+		]
+	},
+	DIDDelete: {
+		fields: []
+	},
+	DIDSet: {
+		fields: []
+	},
+	EscrowCancel: {
+		fields: []
+	},
+	EscrowCreate: {
+		fields: []
+	},
+	EscrowFinish: {
+		fields: []
+	},
+	NFTokenAcceptOffer: {
+		fields: []
+	},
+	NFTokenBurn: {
+		fields: []
+	},
+	NFTokenCancelOffer: {
+		fields: []
+	},
+	NFTokenCreateOffer: {
+		fields: []
+	},
+	NFTokenMint: {
+		fields: []
+	},
+	OfferCreate: {
+		fields: [
+			{
+				key: 'TakerGets',
+				type: 'Amount'
+			},
+			{
+				key: 'TakerPays',
+				type: 'Amount'
+			}
+		]
+	},
+	OfferCancel: {
+		fields: [
+			{
+				key: 'OfferSequence',
+				type: 'UInt32'
+			}
+		]
+	},
 	Payment: {
-		fields: {
-			Destination: {
+		fields: [
+			{
+				key: 'Destination',
 				type: 'AccountID'
 			},
-			DestinationTag: {
+			{
+				key: 'DestinationTag',
 				type: 'UInt32',
 				optional: true
 			},
-			Amount: {
+			{
+				key: 'Amount',
 				type: 'Amount'
 			},
-			DeliverMin: {
+			{
+				key: 'DeliverMin',
 				type: 'Amount',
 				optional: true
 			},
-			SendMax: {
+			{
+				key: 'SendMax',
 				type: 'Amount',
 				optional: true
 			}
-		}
+		]
 	},
-	PaymentChannelClaim: {},
-	PaymentChannelCreate: {},
-	PaymentChannelFund: {},
-	SetRegularKey: {},
-	SignerListSet: {},
-	TicketCreate: {},
-	TrustSet: {},
+	PaymentChannelClaim: {
+		fields: []
+	},
+	PaymentChannelCreate: {
+		fields: []
+	},
+	PaymentChannelFund: {
+		fields: []
+	},
+	SetRegularKey: {
+		fields: [
+			{
+				key: 'RegularKey',
+				type: 'AccountID',
+				optional: true
+			}
+		]
+	},
+	SignerListSet: {
+		fields: []
+	},
+	TicketCreate: {
+		fields: []
+	},
+	TrustSet: {
+		fields: [
+			{
+				key: 'LimitAmount',
+				type: 'Amount'
+			}
+		]
+	}
 }
-
 
 export async function createTx({ type }){
 	if(!type){
@@ -78,101 +200,105 @@ export async function createTx({ type }){
 			message: 'transaction type',
 			options: Object.keys(txSpec).reduce((acc, key) => ({ ...acc, [key] : key }), {})
 		})
+		console.log(``)
+	}else if(!txSpec[type]){
+		let matchedType = Object.keys(txSpec).find(key => key.toLowerCase() === type.toLowerCase())
+
+		if(matchedType)
+			type = matchedType
+		else
+			throw `no transaction type "${type}"`
 	}
 
-	let spec = txSpec[type]
-	let requiredFieldsCount = Object.entries(spec.fields).reduce(
-		(count, [key, spec]) => count + !!spec.optional,
-		Object.keys(txCommonSpec.fields).length
-	)
-
-	console.log()
-	console.log(`${cyan(type)} transaction requires ${requiredFieldsCount} fields`)
-	console.log(`press CTRL+C to correct previous field`)
-	console.log()
-
-	let data = {}
-	let askChain = [
-		{ key: 'Account', ...txCommonSpec.fields.Account },
-		...Object.entries(spec.fields).map(
-			([key, spec]) => ({ key, ...spec })
-		)
-	]
-
-	for(let i=0; i<askChain.length; i++){
-		let { key, type, optional } = askChain[i]
-		let preset = data[key]
-		
-		try{
-			data[key] = await askField({ key, type, optional, preset })
-		}catch(error){
-			if(error.abort && i >= 1){
-				console.log('\n(correcting previous)')
-				i -= 2
-				continue
-			}
-
-			throw error
-		}
+	let spec = {
+		fields: [...txSpec[type].fields, ...txCommonSpec.fields],
+		flags: [...(txSpec[type]?.flags || []), ...txCommonSpec.flags]
 	}
+	let requiredFieldsCount = spec.fields.reduce((count, field) => count + !!(field.optional || field.autofillable), 0)
+	let optionalFieldsCount = spec.fields.length - requiredFieldsCount
 
-	console.log('')
-	
-	if(await askConfirm({ message: 'auto-fill common fields?' })){
-		try{
-			let socket = await connect()
+	console.log(`${cyan(type)} transaction has ${requiredFieldsCount} required and ${optionalFieldsCount} optional field(s)`)
+	console.log(`use arrow keys to navigate the form below`)
 
-			process.stdout.write(`reading sequence field of ${data.Account}... `)
-
-			let { account_data } = await socket.request({
-				command: 'account_info',
-				account: data.Account
-			})
-
-			data.Sequence = account_data.Sequence
-			console.log(data.Sequence.toString())
-
-			process.stdout.write(`reading open ledger fee... `)
-
-			let { drops } = await socket.request({
-				command: 'fee'
-			})
-
-			data.Fee = (parseInt(drops.open_ledger_fee) + 2).toString()
-			console.log(data.Fee)
-
-			socket.close()
-		}catch(error){
-			console.log(red(`error during auto-filling: ${error.message}`))
-			console.log('defaulting to manual input of common fields')
-		}
-	}
-
-	if(!data.Sequence || !data.Fee){
-		console.log('')
-
-		// todo
-	}
-
-	let tx
+	let tx = {}
 	let blob
 
 	while(true){
-		blob = encode({ TransactionType: type, ...data })
+		tx = await askForm({
+			fields: [
+				spec.fields.find(field => field.key === 'Account'),
+				...spec.fields.filter(field => field.key !== 'Account')
+			].map(
+				field => ({
+					name: field.key,
+					hint: field.optional 
+						? 'optional' 
+						: field.autofillable ? 'optional (autofills)' : undefined,
+					initial: tx[field.key] || '',
+					validate: input => {
+						if(!input || input.length === 0){
+							if(field.optional || field.autofillable)
+								return true
+		
+							return 'required'
+						}
+		
+						return validateFieldInput(input, field.type) || true
+					},
+					result: input => {
+						if(input.length === 0)
+							return undefined
+		
+						return parseFieldInput(input, field.type)
+					}
+				})
+			)
+		})
+
+		let needsAutofill = spec.fields.some(field => field.autofillable && tx[field.key] === undefined)
+
+		if(needsAutofill){
+			console.log('autofilling optional fields...')
+
+			let socket = await connect()
+
+			if(!tx.Sequence){
+				console.log(`reading account sequence of ${tx.Account}... `)
+
+				let { account_data } = await socket.request({
+					command: 'account_info',
+					account: tx.Account
+				})
+
+				tx.Sequence = account_data.Sequence
+			}
+
+			if(!tx.Fee){
+				console.log(`reading open ledger fee... `)
+
+				let { drops } = await socket.request({
+					command: 'fee'
+				})
+	
+				tx.Fee = (parseInt(drops.open_ledger_fee) + 2).toString()
+			}
+
+			socket.close()
+		}
+
+		blob = encode({ TransactionType: type, ...tx })
 		tx = decode(blob)
 	
 		console.log('')
 		console.log('======= PLEASE CONFIRM =======')
-		console.log(JSON.stringify(tx, null, 4))
+		console.log(cyan(JSON.stringify(tx, null, 4)))
 		console.log('==============================')
 		console.log('')
 	
 	
-		if(!await askConfirm({ message: 'are the above details correct?' })){
-			// todo
+		if(await askConfirm({ message: 'are the above details correct?' })){
+			break
 		}
-
-		break
 	}
 
 	if(await askConfirm({ message: 'sign now?' })){
@@ -181,65 +307,45 @@ export async function createTx({ type }){
 	}
 
 	console.log()
-	console.log(`transaction json:\n${JSON.stringify(tx, null, 4)}`)
+	console.log(`transaction json:\n${cyan(JSON.stringify(tx, null, 4))}`)
 	console.log()
-	console.log(`transaction blob:\n${blob}`)
+	console.log(`transaction blob:\n${cyan(blob)}`)
 	console.log()
-	console.log(`transaction mnemonic:\n${txToMnemonic(Buffer.from(blob, 'hex'))}`)
+	console.log(`transaction mnemonic:\n${cyan(txToMnemonic(Buffer.from(blob, 'hex')))}`)
 }
 
-async function askField({ key, type, optional, preset }){
-	let message = optional ? `${key} (optional): ` : `${key}: `
-	let validate
-
+function validateFieldInput(input, type){
 	switch(type){
-		case 'AccountID': {
-			validate = input => !isValidClassicAddress(input)
-				&& 'not a valid r-address - try again'
-			break
-		}
-		case 'UInt32': {
-			validate = input => !/^[0-9]+$/.test(input)
-				&& 'not a valid integer number - try again'
-			break
-		}
+		case 'AccountID': 
+			return !isValidClassicAddress(input)
+				&& 'not a valid r-address'
+		case 'UInt32': 
+			return !/^[0-9]+$/.test(input)
+				&& 'not a valid integer number'
 		case 'Amount': {
-			validate = input => {
 				try{
 					parseAmount(input)
 				}catch(error){
-					return `${error.message} - try again`
+					return `${error.message}`
 				}
-			}
 			break
 		}
 	}
+}
 
-	if(optional && validate){
-		let validateRequired = validate
-
-		validate = input => input.length === 0
-			? undefined
-			: validateRequired(input)
-	}
-
-	let value = await ask({ message, preset, validate })
-
-	if(optional && !value)
-		return
-
+function parseFieldInput(input, type){
 	switch(type){
 		case 'UInt32': {
-			value = parseInt(value)
+			input = parseInt(input)
 			break
 		}
 		case 'Amount': {
-			value = parseAmount(value)
+			input = parseAmount(input)
 			break
 		}
 	}
 
-	return value
+	return input
 }
 
 export function txToMnemonic(blob){

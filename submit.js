@@ -4,7 +4,10 @@ import { askPayload, red } from './terminal.js'
 
 export async function submit({ blob }){
 	if(!blob){
-		let { txJson, txBlob } = await askPayload({ message: `enter tx to submit (json|hex): ` })
+		let { txJson, txBlob } = await askPayload({
+			message: `tx to submit`,
+			hint: `(hex or json)`
+		})
 
 		if(txJson)
 			blob = encode(txJson)
