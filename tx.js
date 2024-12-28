@@ -28,6 +28,7 @@ const txCommonSpec = {
 
 const txSpec = {
 	AccountSet: {
+		description: `modifies the properties of an account in the XRP Ledger`,
 		fields: [
 			{
 				key: 'SetFlag',
@@ -70,6 +71,7 @@ const txSpec = {
 		fields: []
 	},
 	DepositPreauth: {
+		description: `gives another account pre-approval to deliver payments to the sender of this transaction`,
 		fields: [
 			{
 				key: 'Authorize',
@@ -145,6 +147,7 @@ const txSpec = {
 		]
 	},
 	OfferCancel: {
+		description: `removes an Offer object from the XRP Ledger`,
 		fields: [
 			{
 				key: 'OfferSequence',
@@ -153,6 +156,7 @@ const txSpec = {
 		]
 	},
 	Payment: {
+		description: `represents a transfer of value from one account to another`,
 		fields: [
 			{
 				key: 'Destination',
@@ -203,6 +207,7 @@ const txSpec = {
 		fields: []
 	},
 	SetRegularKey: {
+		description: `assigns, changes, or removes the regular key pair associated with an account`,
 		fields: [
 			{
 				key: 'RegularKey',
@@ -218,6 +223,7 @@ const txSpec = {
 		fields: []
 	},
 	TrustSet: {
+		description: `creates or modifies a trust line linking two accounts`,
 		fields: [
 			{
 				key: 'LimitAmount',
@@ -271,7 +277,7 @@ export async function createTx({ type }){
 		flags: [...(txSpec[type]?.flags || []), ...txCommonSpec.flags]
 	}
 
-	console.log(`${cyan(type)} transaction ${spec.description}`)
+	console.log(`${cyan(type)} transaction ${spec.description}.`)
 	console.log(`use arrow keys to navigate the form below`)
 	console.log(``)
 
