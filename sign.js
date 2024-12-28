@@ -69,8 +69,7 @@ export async function signTx({ tx }){
 			message: 'proceed with signed transaction',
 			options: {
 				submit: 'submit to network',
-				qr: 'print blob as QR code',
-				exit: 'exit',
+				qr: 'print blob as QR code'
 			}
 		})
 	
@@ -83,10 +82,6 @@ export async function signTx({ tx }){
 			case 'qr': {
 				await printQR({ blob: signedBlob })
 				break
-			}
-	
-			case 'exit': {
-				process.exit(0)
 			}
 		}
 	}
