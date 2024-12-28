@@ -38,7 +38,18 @@ const txSpec = {
 		]
 	},
 	AccountDelete: {
-		fields: []
+		description: `deletes an account and any objects it owns in the XRP Ledger, if possible, sending the account's remaining XRP to a specified destination account`,
+		fields: [
+			{
+				key: 'Destination',
+				type: 'AccountID'
+			},
+			{
+				key: 'DestinationTag',
+				type: 'UInt32',
+				optional: true
+			}
+		]
 	},
 	AMMBid: {
 		fields: []
