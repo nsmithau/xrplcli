@@ -340,9 +340,13 @@ export async function createTx({ type }){
 				)
 			})
 
-			tx.Flags = spec.flags
-				.filter(flag => flags.includes(flag.name))
-				.reduce((v, f) => v | f.value, 0)
+			if(flags.length > 0){
+				tx.Flags = spec.flags
+					.filter(flag => flags.includes(flag.name))
+					.reduce((v, f) => v | f.value, 0)
+			}else{
+				delete tx.Flags
+			}
 		}
 
 		let needsAutofill = spec.fields.some(field => field.autofillable && tx[field.key] === undefined)
