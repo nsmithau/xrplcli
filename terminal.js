@@ -1,7 +1,7 @@
 import readline from 'readline/promises'
 import Enquirer from 'enquirer'
 
-const { Input, Select, Confirm, Form } = Enquirer
+const { Input, Select, Confirm, Form, MultiSelect } = Enquirer
 
 const colorReset = '\x1b[0m'
 const colorCyan = '\x1b[36m'
@@ -84,12 +84,9 @@ export async function askChoice({ message, options }){
 	}
 }
 
-export async function askForm({ fields }){
+export async function askForm({ message, fields }){
 	let prompt = new Form({
-		symbols: {
-			prefix: ''
-		},
-		message: '',
+		message,
 		footer: '\npress ENTER to submit',
 		choices: fields,
 		validate: input => {
@@ -103,6 +100,23 @@ export async function askForm({ fields }){
 			else
 				return issues.join(', ')
 		}
+	})
+
+	try{
+		return await prompt.run()
+	}catch(error){
+		if(error === '')
+			throw { abort: true }
+		else
+			throw error
+	}
+}
+
+export async function askSelection({ message, fields }){
+	let prompt = new MultiSelect({
+		message,
+		footer: '\npress ENTER to submit',
+		choices: fields
 	})
 
 	try{

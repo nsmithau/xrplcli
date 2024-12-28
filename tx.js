@@ -1,6 +1,6 @@
 import { isValidClassicAddress } from 'ripple-address-codec'
 import { decode, encode } from 'ripple-binary-codec'
-import { ask, askChoice, askConfirm, askForm, cyan, red } from './terminal.js'
+import { askChoice, askConfirm, askForm, askSelection, cyan } from './terminal.js'
 import { parseAmount } from './utils.js'
 import { connect } from './net.js'
 import { signTx } from './sign.js'
@@ -114,6 +114,7 @@ const txSpec = {
 		fields: []
 	},
 	OfferCreate: {
+		description: `places an Offer in the decentralized exchange`,
 		fields: [
 			{
 				key: 'TakerGets',
@@ -122,6 +123,24 @@ const txSpec = {
 			{
 				key: 'TakerPays',
 				type: 'Amount'
+			}
+		],
+		flags: [
+			{
+				name: 'tfPassive',
+				value: 0x00010000
+			},
+			{
+				name: 'tfImmediateOrCancel',
+				value: 0x00020000
+			},
+			{
+				name: 'tfFillOrKill',
+				value: 0x00040000
+			},
+			{
+				name: 'tfSell',
+				value: 0x00080000
 			}
 		]
 	},
@@ -158,6 +177,20 @@ const txSpec = {
 				type: 'Amount',
 				optional: true
 			}
+		],
+		flags: [
+			{
+				name: 'tfNoRippleDirect',
+				value: 0x00010000
+			},
+			{
+				name: 'tfPartialPayment',
+				value: 0x00020000
+			},
+			{
+				name: 'tfLimitQuality',
+				value: 0x00040000
+			}
 		]
 	},
 	PaymentChannelClaim: {
@@ -190,6 +223,28 @@ const txSpec = {
 				key: 'LimitAmount',
 				type: 'Amount'
 			}
+		],
+		flags: [
+			{
+				name: 'tfSetfAuth',
+				value: 0x00010000
+			},
+			{
+				name: 'tfSetNoRipple',
+				value: 0x00020000
+			},
+			{
+				name: 'tfClearNoRipple',
+				value: 0x00040000
+			},
+			{
+				name: 'tfSetFreeze',
+				value: 0x00100000
+			},
+			{
+				name: 'tfClearFreeze',
+				value: 0x00200000
+			}
 		]
 	}
 }
@@ -211,20 +266,21 @@ export async function createTx({ type }){
 	}
 
 	let spec = {
+		description: txSpec[type].description,
 		fields: [...txSpec[type].fields, ...txCommonSpec.fields],
 		flags: [...(txSpec[type]?.flags || []), ...txCommonSpec.flags]
 	}
-	let requiredFieldsCount = spec.fields.reduce((count, field) => count + !!(field.optional || field.autofillable), 0)
-	let optionalFieldsCount = spec.fields.length - requiredFieldsCount
 
-	console.log(`${cyan(type)} transaction has ${requiredFieldsCount} required and ${optionalFieldsCount} optional field(s)`)
+	console.log(`${cyan(type)} transaction ${spec.description}`)
 	console.log(`use arrow keys to navigate the form below`)
+	console.log(``)
 
 	let tx = {}
 	let blob
 
 	while(true){
 		tx = await askForm({
+			message: `transaction fields`,
 			fields: [
 				spec.fields.find(field => field.key === 'Account'),
 				...spec.fields.filter(field => field.key !== 'Account')
@@ -255,10 +311,28 @@ export async function createTx({ type }){
 			)
 		})
 
+		if(spec.flags.length > 0){
+			let flags = await askSelection({
+				message: `transaction flags`,
+				fields: spec.flags.map(
+					flag => ({
+						name: flag.name,
+						initial: !!((tx.Flags || 0) & spec.value)
+					})
+				)
+			})
+
+			tx.Flags = spec.flags
+				.filter(flag => flags.includes(flag.name))
+				.reduce((v, f) => v | f.value, 0)
+		}
+
+		console.log(``)
+
 		let needsAutofill = spec.fields.some(field => field.autofillable && tx[field.key] === undefined)
 
 		if(needsAutofill){
-			console.log('autofilling optional fields...')
+			console.log(`autofilling optional fields...`)
 
 			let socket = await connect()
 
