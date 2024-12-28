@@ -40,7 +40,7 @@ export async function submit({ blob }){
 	})
 
 	console.log(``)
-	console.log(`engine result: ${green(result.engine_result)}`)
+	console.log(`engine result: ${result.engine_result.startsWith('tes') ? green(result.engine_result) : red(result.engine_result)}`)
 	console.log(result.engine_result_message)
 	
 	if(result.kept || result.queued || result.broadcast)
