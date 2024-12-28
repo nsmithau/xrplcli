@@ -1,6 +1,6 @@
-import { decode, encode } from 'ripple-binary-codec'
+import { encode } from 'ripple-binary-codec'
 import { connect } from './net.js'
-import { askPayload, red } from './terminal.js'
+import { askPayload, presentTask, green, red } from './terminal.js'
 
 export async function submit({ blob }){
 	if(!blob){
@@ -15,28 +15,34 @@ export async function submit({ blob }){
 			blob = txBlob
 	}
 
-	let socket = await connect()
+	let result
 
-	process.stdout.write('submitting... ')
+	await presentTask({
+		message: `connecting`,
+		execute: async ctx => {
+			let socket = await connect()
 
-	try{
-		let result = await socket.request({
-			command: 'submit',
-			tx_blob: blob
-		})
+			ctx.indicator.text = `submitting transaction to ${socket.url}`
 
-		console.log(`${result.engine_result}`)
-		console.log(result.engine_result_message)
-
-		if(result.kept || result.queued || result.broadcast)
-			console.log(`hash: ${result.tx_json.hash}`)
-	}catch(error){
-		if(error.error){
-			console.log(red(error.error))
-			console.log(error.error_message || error.error_exception)
-		}else{
-			console.log(red('error'))
-			console.log(red(error.message || error))
+			try{
+				result = await socket.request({
+					command: 'submit',
+					tx_blob: blob
+				})
+			}catch(error){
+				if(error.error){
+					throw new Error(`${socket.url} responded with: ${red(error.error)} - ${error.error_message || error.error_exception}`)
+				}else{
+					throw error
+				}
+			}
 		}
-	}
+	})
+
+	console.log(``)
+	console.log(`engine result: ${green(result.engine_result)}`)
+	console.log(result.engine_result_message)
+	
+	if(result.kept || result.queued || result.broadcast)
+		console.log(`hash: ${result.tx_json.hash}`)
 }

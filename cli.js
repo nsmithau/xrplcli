@@ -78,7 +78,7 @@ async function cli(args){
 		if(error.abort){
 			console.log('ABORT')
 		}else{
-			console.error(red(error.message || error))
+			console.error(red(error.message || error.error_message || error))
 			process.exit(1)
 		}
 	}

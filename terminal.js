@@ -1,10 +1,12 @@
 import readline from 'readline/promises'
 import Enquirer from 'enquirer'
+import ora from 'ora'
 
 const { Input, Select, Confirm, Form, MultiSelect } = Enquirer
 
 const colorReset = '\x1b[0m'
 const colorCyan = '\x1b[36m'
+const colorGreen = '\x1b[32m'
 const colorRed = '\x1b[38;5;197m'
 
 export async function ask({ message, validate, preset, hint, note, required = false, redactAfter = false }){
@@ -192,8 +194,39 @@ export async function awaitInterrupt(){
 	})
 }
 
+export async function presentTask({ message, execute, retryable = true }){
+	while(true){
+		let indicator = ora({ text: message }).start()
+
+		try{
+			await execute({ indicator })
+			indicator.stopAndPersist({
+				text: message,
+				symbol: green('√')
+			}) 
+			break
+		}catch(error){
+			indicator.stopAndPersist({
+				text: error.message || error.error_message || error,
+				symbol: red('x')
+			})
+
+			if(retryable){
+				if(await askConfirm({ message: 'retry?' }))
+					continue
+			}
+
+			throw error
+		}
+	}
+}
+
 export function cyan(text){
 	return `${colorCyan}${text}${colorReset}`
+}
+
+export function green(text){
+	return `${colorGreen}${text}${colorReset}`
 }
 
 export function red(text){

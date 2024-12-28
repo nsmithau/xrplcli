@@ -1,6 +1,6 @@
 import { isValidClassicAddress } from 'ripple-address-codec'
 import { decode, encode } from 'ripple-binary-codec'
-import { askChoice, askConfirm, askForm, askSelection, cyan } from './terminal.js'
+import { askChoice, askConfirm, askForm, askSelection, cyan, presentTask, red } from './terminal.js'
 import { parseAmount } from './utils.js'
 import { connect } from './net.js'
 import { signTx } from './sign.js'
@@ -279,12 +279,13 @@ export async function createTx({ type }){
 
 	console.log(`${cyan(type)} transaction ${spec.description}.`)
 	console.log(`use arrow keys to navigate the form below`)
-	console.log(``)
 
 	let tx = {}
 	let blob
 
 	while(true){
+		console.log(``)
+
 		tx = await askForm({
 			message: `transaction fields`,
 			fields: [
@@ -333,47 +334,51 @@ export async function createTx({ type }){
 				.reduce((v, f) => v | f.value, 0)
 		}
 
-		console.log(``)
-
 		let needsAutofill = spec.fields.some(field => field.autofillable && tx[field.key] === undefined)
 
 		if(needsAutofill){
-			console.log(`autofilling optional fields...`)
-
-			let socket = await connect()
-
-			if(!tx.Sequence){
-				console.log(`reading account sequence of ${tx.Account}... `)
-
-				let { account_data } = await socket.request({
-					command: 'account_info',
-					account: tx.Account
-				})
-
-				tx.Sequence = account_data.Sequence
-			}
-
-			if(!tx.Fee){
-				console.log(`reading open ledger fee... `)
-
-				let { drops } = await socket.request({
-					command: 'fee'
-				})
+			try{
+				await presentTask({
+					message: `autofilling optional fields`,
+					execute: async () => {
+						let socket = await connect()
 	
-				tx.Fee = (parseInt(drops.open_ledger_fee) + 2).toString()
+						if(!tx.Sequence){
+							let { account_data } = await socket.request({
+								command: 'account_info',
+								account: tx.Account
+							})
+	
+							tx.Sequence = account_data.Sequence
+						}
+	
+						if(!tx.Fee){
+							let { drops } = await socket.request({
+								command: 'fee'
+							})
+				
+							tx.Fee = (parseInt(drops.open_ledger_fee) + 2).toString()
+						}
+	
+						socket.close()
+					}
+				})
+			}catch(error){
+				console.log(``)
+				console.log(red(`cannot autofill due to error: ${error.message || error.error_message || error}`))
+				console.log(`please fill fields manually`)
+				continue
 			}
-
-			socket.close()
 		}
 
 		blob = encode({ TransactionType: type, ...tx })
 		tx = decode(blob)
 	
-		console.log('')
-		console.log('======= PLEASE CONFIRM =======')
+		console.log(``)
+		console.log(`======= PLEASE CONFIRM =======`)
 		console.log(cyan(JSON.stringify(tx, null, 4)))
-		console.log('==============================')
-		console.log('')
+		console.log(`==============================`)
+		console.log(``)
 	
 	
 		if(await askConfirm({ message: 'are the above details correct?' })){
