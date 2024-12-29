@@ -40,7 +40,7 @@ export async function ask({
 		multiline,
 		required,
 		validate: required
-			? input => input.length === 0
+			? input => input.trim().length === 0
 				? 'required'
 				: (validate ? validate(input) : true)
 			: validate,

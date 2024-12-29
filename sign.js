@@ -13,6 +13,7 @@ export async function sign({ }){
 			message: `transaction to sign`,
 			hint: `(json, hex or mnemonic)`,
 			multiline: true,
+			required: true,
 			parse: input => {
 				input = input.trim()
 
