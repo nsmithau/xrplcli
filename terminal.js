@@ -9,46 +9,66 @@ const colorCyan = '\x1b[36m'
 const colorGreen = '\x1b[32m'
 const colorRed = '\x1b[38;5;197m'
 
-export async function ask({ message, validate, preset, hint, note, required = false, redactAfter = false }){
-	while(true){
-		let input
-		let prompt = new Input({
-			message: typeof message === 'string'
-				? message
-				: prompt => message(prompt.input),
-			hint,
-			initial: preset,
-			required,
-			validate: required
-				? input => input.length === 0
-					? 'required'
-					: (validate ? validate(input) : true)
-				: validate,
-			footer: note
-				? prompt => note(prompt.input)
-				: undefined
-		})
-	
-		try{
-			input = await prompt.run()
-		}catch(error){
-			if(error === '')
-				throw { abort: true }
-			else
-				throw error
+export async function ask({ 
+	message, 
+	validate, 
+	parse, 
+	preset, 
+	hint, 
+	note, 
+	multiline = false,
+	required = false, 
+	redactAfter = false
+}){
+	if(parse){
+		let ogValidate = (validate || (() => true))
+
+		validate = input => {
+			try{ parse(input) } catch (error) {
+				return error.message || error
+			}
+			return ogValidate(input)
 		}
-
-		if(redactAfter && input.length > 0){
-			let messageLength = typeof message === 'string'
-				? message.length
-				: message(input).length
-
-			process.stdout.moveCursor(messageLength + 5, -1)
-			process.stdout.write(`${cyan('*'.repeat(input.length))}\n`)
-		}
-
-		return input
 	}
+
+	let prompt = new Input({
+		message: typeof message === 'string'
+			? message
+			: prompt => message(prompt.input),
+		hint,
+		initial: preset,
+		multiline,
+		required,
+		validate: required
+			? input => input.length === 0
+				? 'required'
+				: (validate ? validate(input) : true)
+			: validate,
+		result: parse,
+		footer: note
+			? prompt => note(prompt.input)
+			: undefined
+	})
+
+	try{
+		var input = await prompt.run()
+	}catch(error){
+		if(error === '')
+			throw { abort: true }
+		else
+			throw error
+	}
+
+	if(redactAfter && input.length > 0){
+		let messageLength = typeof message === 'string'
+			? message.length
+			: message(input).length
+
+		process.stdout.moveCursor(messageLength + 5, -1)
+		process.stdout.write(`${cyan('*'.repeat(input.length))}\n`)
+	}
+
+	return input
 }
 
 export async function askConfirm({ message }){
@@ -131,16 +151,14 @@ export async function askSelection({ message, fields }){
 	}
 }
 
-export async function askPayload({ message, hint, preset }){
-	let input = preset
-
+export async function askTx({ message, hint, parse }){
 	while(true){
 		let parse = input => {
 			input = input.trim()
 
 			if(input.startsWith('{')){
 				try{
-					return { txJson: JSON.parse(input) }
+					return { tx: JSON.parse(input) }
 				}catch{
 					throw `not valid JSON`
 				}

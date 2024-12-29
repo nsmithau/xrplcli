@@ -1,19 +1,10 @@
 import { encode } from 'ripple-binary-codec'
 import { connect } from './net.js'
-import { askPayload, presentTask, green, red } from './terminal.js'
+import { presentTask, ask, green, red } from './terminal.js'
 
 export async function submit({ blob }){
-	if(!blob){
-		let { txJson, txBlob } = await askPayload({
-			message: `tx to submit`,
-			hint: `(hex or json)`
-		})
-
-		if(txJson)
-			blob = encode(txJson)
-		else
-			blob = txBlob
-	}
+	if(!blob)
+		blob = await ask({ message: `tx to submit (hex)` })
 
 	let result
 
