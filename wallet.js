@@ -153,28 +153,33 @@ async function performVanitySearch({ num, criteria, entropy }){
 export async function askSecret({ message = `secret key` }){
 	let input = ''
 	let parse = input => {
+		let type
+		let bytes
+
 		input = input.trim()
 
 		try{
 			if(input.includes(' ')){
-				return {
-					type: 'mnemonic',
-					bytes: mnemonicToKey(input)
-				}
+				type = 'mnemonic'
+				bytes = mnemonicToKey(input)
 			}else{
-				return {
-					type: 'seed',
-					bytes: decodeSeed(input).bytes
-				}
+				type = 'seed'
+				bytes = decodeSeed(input).bytes
 			}
 		}catch{
-			return {
-				type: 'passphrase',
-				bytes: createHash('sha512')
-					.update(input)
-					.digest()
-					.slice(0, 16)
-			}
+			type = 'passphrase'
+			bytes = createHash('sha512')
+				.update(input)
+				.digest()
+				.slice(0, 16)
+		}
+
+		let seed = encodeSeed(bytes, 'ed25519')
+
+		return {
+			type,
+			seed,
+			address: deriveAddress({ seed })
 		}
 	}
 	
@@ -184,15 +189,18 @@ export async function askSecret({ message = `secret key` }){
 			: `${message} (${parse(input).type})`,
 		hint: `(seed, mnemonic or passphrase)`,
 		preset: input,
+		note: input => input.length > 0
+			? `  wallet address: ${parse(input).address}`
+			: undefined,
 		required: true,
 		redactAfter: true
 	})
 
-	let seed = encodeSeed(parse(input).bytes, 'ed25519')
+	let { address, seed } = parse(input)
 
 	return {
-		seed,
-		address: deriveAddress({ seed })
+		address,
+		seed
 	}
 }
 
