@@ -1,6 +1,6 @@
 import { sign as libSignTx } from '@xrplkit/submit'
 import { encode, decode } from 'ripple-binary-codec'
-import { askChoice, ask, cyan, red } from './terminal.js'
+import { askChoice, ask, cyan, red, green } from './terminal.js'
 import { askSecret } from './wallet.js'
 import { submit } from './submit.js'
 import { printQR } from './qr.js'
@@ -65,6 +65,7 @@ export async function signTx({ tx }){
 	let signedJson = JSON.stringify(signed, null, 4)
 	let signedBlob = encode(signed)
 
+	console.log(`${green(`√`)} signed as ${credentails.address}`)
 	console.log()
 	console.log(`signed blob:\n${cyan(signedBlob)}`)
 	console.log()
