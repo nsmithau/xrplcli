@@ -24,7 +24,7 @@ export async function sign({ }){
 						throw `not valid json`
 					}
 					try{
-						return decode(json)
+						return decode(encode(json))
 					}catch(error){
 						throw `malformed tx: ${error.message}`
 					}
