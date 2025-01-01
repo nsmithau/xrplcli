@@ -9,6 +9,13 @@ const colorCyan = '\x1b[36m'
 const colorGreen = '\x1b[32m'
 const colorRed = '\x1b[38;5;197m'
 
+const defaultPromptSymbols = {
+	prefix: {
+		submitted: '√',
+		cancelled: '×'
+	}
+}
+
 export async function ask({ 
 	message, 
 	validate, 
@@ -47,7 +54,8 @@ export async function ask({
 		result: parse,
 		footer: note
 			? prompt => note(prompt.input)
-			: undefined
+			: undefined,
+		symbols: defaultPromptSymbols
 	})
 
 	try{
@@ -73,7 +81,8 @@ export async function ask({
 
 export async function askConfirm({ message }){
 	let prompt = new Confirm({
-		message
+		message,
+		symbols: defaultPromptSymbols
 	})
 
 	try{
@@ -92,7 +101,8 @@ export async function askChoice({ message, options }){
 
 	let prompt = new Select({
 		message,
-		choices: optionsValues.slice()
+		choices: optionsValues.slice(),
+		symbols: defaultPromptSymbols
 	})
 	
 	try{
@@ -121,7 +131,8 @@ export async function askForm({ message, fields }){
 				return true
 			else
 				return issues.join(', ')
-		}
+		},
+		symbols: defaultPromptSymbols
 	})
 
 	try{
@@ -138,7 +149,8 @@ export async function askSelection({ message, fields }){
 	let prompt = new MultiSelect({
 		message,
 		footer: '\npress ENTER to submit',
-		choices: fields
+		choices: fields,
+		symbols: defaultPromptSymbols
 	})
 
 	try{
@@ -184,11 +196,12 @@ export async function askTx({ message, hint, parse }){
 				}catch(error){
 					return error
 				}
-			}
+			},
+			symbols: defaultPromptSymbols
 		})
 
 		try{
-			input = await prompt.run()
+			var input = await prompt.run()
 		}catch(error){
 			if(error === '')
 				throw { abort: true }
