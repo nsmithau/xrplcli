@@ -424,7 +424,8 @@ function validateFieldInput(input, type){
 				&& 'not a valid integer number'
 		case 'Amount': {
 				try{
-					parseAmount(input)
+					if(typeof input === 'string')
+						parseAmount(input)
 				}catch(error){
 					return `${error.message}`
 				}
