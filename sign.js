@@ -8,50 +8,50 @@ import { mnemonicToTx } from './tx.js'
 
 
 export async function sign({ }){
-	return await signTx({
-		tx: await ask({
-			message: `transaction to sign`,
-			hint: `(json, hex or mnemonic)`,
-			multiline: true,
-			required: true,
-			parse: input => {
-				input = input.trim()
+	let tx = await ask({
+		message: `transaction to sign`,
+		hint: `(json, hex or mnemonic)`,
+		multiline: true,
+		required: true,
+		parse: input => {
+			input = input.trim()
 
-				if(input.startsWith('{')){
-					try{
-						var json = JSON.parse(input)
-					}catch{
-						throw `not valid json`
-					}
-					try{
-						return decode(encode(json))
-					}catch(error){
-						throw `malformed tx: ${error.message}`
-					}
-				}else if(/^[0-9A-F]+$/.test(input.toUpperCase())){
-					try{
-						return decode(input)
-					}catch(error){
-						throw `malformed blob: ${error.message}`
-					}
-				}else{
-					try{
-						return decode(mnemonicToTx(input).toString('hex'))
-					}catch(error){
-						throw `bad mnemonic: ${error.message}`
-					}
+			if(input.startsWith('{')){
+				try{
+					var json = JSON.parse(input)
+				}catch{
+					throw `not valid json`
+				}
+				try{
+					return decode(encode(json))
+				}catch(error){
+					throw `malformed tx: ${error.message}`
+				}
+			}else if(/^[0-9A-F]+$/.test(input.toUpperCase())){
+				try{
+					return decode(input)
+				}catch(error){
+					throw `malformed blob: ${error.message}`
+				}
+			}else{
+				try{
+					return decode(mnemonicToTx(input).toString('hex'))
+				}catch(error){
+					throw `bad mnemonic: ${error.message}`
 				}
 			}
-		})
+		}
 	})
-}
 
-export async function signTx({ tx }){
 	console.log(`====== SIGNABLE PAYLOAD ======`)
 	console.log(cyan(JSON.stringify(tx, null, 4)))
 	console.log(`==============================`)
 	console.log(``)
 
+	return await signTx({ tx })
+}
+
+export async function signTx({ tx }){
 	let credentails = await askSecret({ message: `secret key to sign` })
 	let signed
 
