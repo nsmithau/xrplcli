@@ -9,12 +9,17 @@ import { createWallet, closeWallet, checkWallet } from './wallet.js'
 import { useNode } from './net.js'
 
 async function cli(args){
+	if(args.terminal)
+		process.stdout.write('\x1Bc')
+
 	console.log(cyan(
 ` __  _____ ___ _    ___ _    ___ 
  \\ \\/ / _ \\ _ \\ |  / __| |  |_ _|
   >  <|   /  _/ |_| (__| |__ | | 
  /_/\\_\\_|_\\_| |____\\___|____|___|
  `))
+
+	let exitCode = 0
 
 	if(args.node){
 		console.log(`using node ${args.node}`)
@@ -25,17 +30,26 @@ async function cli(args){
 		let action = args._[0]
 
 		if(!action){
-			action = await askChoice({
-				message: 'choose action',
-				options: {
-					tx: 'create transaction',
-					sign: 'sign transaction',
-					submit: 'submit transaction',
-					create: 'create wallet',
-					check: 'check wallet',
-					close: 'close wallet',
+			try{
+				action = await askChoice({
+					message: 'choose action',
+					options: {
+						tx: 'create transaction',
+						sign: 'sign transaction',
+						submit: 'submit transaction',
+						create: 'create wallet',
+						check: 'check wallet',
+						close: 'close wallet',
+					}
+				})
+			}catch(error){
+				if(error.abort){
+					console.log(`\nEXIT\n`)
+					process.exit(0)
+				}else{
+					throw error
 				}
-			})
+			}
 		}
 
 		switch(action){
@@ -76,14 +90,17 @@ async function cli(args){
 		}
 	}catch(error){
 		if(error.abort){
-			console.log('ABORT')
+			console.log(`\nABORT\n`)
 		}else{
 			console.error(red(error.message || error.error_message || error))
-			process.exit(1)
+			exitCode = 1
 		}
 	}
 
-	process.exit()
+	if(args.terminal)
+		cli(args)
+	else
+		process.exit(exitCode)
 }
 
 await cli(minimist(process.argv.slice(2)))
