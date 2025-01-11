@@ -1,7 +1,7 @@
 import { isValidClassicAddress } from 'ripple-address-codec'
 import { decode, encode } from 'ripple-binary-codec'
 import { askChoice, askConfirm, askForm, askSelection, cyan, presentTask, red } from './terminal.js'
-import { parseAmount } from './utils.js'
+import { parseAmount, parseToken } from './utils.js'
 import { connect } from './net.js'
 import { signTx } from './sign.js'
 import { bufferToMnemonic, mnemonicToBuffer } from './rfc1751.js'
@@ -34,6 +34,36 @@ const txSpec = {
 				key: 'SetFlag',
 				type: 'UInt32',
 				optional: true
+			},
+			{
+				key: 'ClearFlag',
+				type: 'UInt32',
+				optional: true
+			},
+			{
+				key: 'Domain',
+				type: 'Blob',
+				optional: true
+			},
+			{
+				key: 'EmailHash',
+				type: 'Hash128',
+				optional: true
+			},
+			{
+				key: 'MessageKey',
+				type: 'Blob',
+				optional: true
+			},
+			{
+				key: 'TransferRate',
+				type: 'UInt32',
+				optional: true
+			},
+			{
+				key: 'TickSize',
+				type: 'UInt8',
+				optional: true
 			}
 		]
 	},
@@ -52,34 +82,240 @@ const txSpec = {
 		]
 	},
 	AMMBid: {
-		fields: []
+		description: `bids on an Automated Market Maker's (AMM's) auction slot`,
+		fields: [
+			{
+				key: 'Asset',
+				type: 'STIssue'
+			},
+			{
+				key: 'Asset2',
+				type: 'STIssue'
+			},
+			{
+				key: 'BidMin',
+				type: 'Amount',
+				optional: true
+			},
+			{
+				key: 'BidMax',
+				type: 'Amount',
+				optional: true
+			}
+		]
 	},
 	AMMCreate: {
-		fields: []
+		description: `creates a new Automated Market Maker (AMM) instance for trading a pair of assets (fungible tokens or XRP)`,
+		fields: [
+			{
+				key: 'Amount',
+				type: 'Amount',
+				optional: true
+			},
+			{
+				key: 'Amount2',
+				type: 'Amount',
+				optional: true
+			},
+			{
+				key: 'TradingFee',
+				type: 'UInt16',
+				optional: true
+			}
+		]
 	},
 	AMMDelete: {
-		fields: []
+		description: `deletes an empty Automated Market Maker (AMM) instance that could not be fully deleted automatically`,
+		fields: [
+			{
+				key: 'Asset',
+				type: 'STIssue'
+			},
+			{
+				key: 'Asset2',
+				type: 'STIssue'
+			}
+		]
 	},
 	AMMDeposit: {
-		fields: []
+		description: `deposits funds into an Automated Market Maker (AMM) instance and receive the AMM's liquidity provider tokens (LP Tokens) in exchange`,
+		fields: [
+			{
+				key: 'Asset',
+				type: 'STIssue'
+			},
+			{
+				key: 'Asset2',
+				type: 'STIssue'
+			},
+			{
+				key: 'Amount',
+				type: 'Amount',
+				optional: true
+			},
+			{
+				key: 'Amount2',
+				type: 'Amount',
+				optional: true
+			},
+			{
+				key: 'EPrice',
+				type: 'Amount',
+				optional: true
+			},
+			{
+				key: 'LPTokenOut',
+				type: 'Amount',
+				optional: true
+			},
+			{
+				key: 'TradingFee',
+				type: 'UInt16',
+				optional: true
+			}
+		],
+		flags: [
+			{
+				name: 'tfLPToken',
+				value: 0x00010000
+			},
+			{
+				name: 'tfTwoAsset',
+				value: 0x00100000
+			},
+			{
+				name: 'tfTwoAssetIfEmpty',
+				value: 0x00800000
+			},
+			{
+				name: 'tfSingleAsset',
+				value: 0x00080000
+			},
+			{
+				name: 'tfOneAssetLPToken',
+				value: 0x00200000
+			},
+			{
+				name: 'tfLimitLPToken',
+				value: 0x00400000
+			},
+		]
 	},
 	AMMVote: {
-		fields: []
+		description: `votes on the trading fee for an Automated Market Maker instance`,
+		fields: [
+			{
+				key: 'Asset',
+				type: 'STIssue'
+			},
+			{
+				key: 'Asset2',
+				type: 'STIssue'
+			},
+			{
+				key: 'TradingFee',
+				type: 'UInt16',
+				optional: true
+			}
+		]
 	},
 	AMMWithdraw: {
-		fields: []
+		description: `withdraws assets from an Automated Market Maker (AMM) instance by returning the AMM's liquidity provider tokens (LP Tokens)`,
+		fields: [
+			{
+				key: 'Asset',
+				type: 'STIssue'
+			},
+			{
+				key: 'Asset2',
+				type: 'STIssue'
+			},
+			{
+				key: 'Amount',
+				type: 'Amount',
+				optional: true
+			},
+			{
+				key: 'Amount2',
+				type: 'Amount',
+				optional: true
+			},
+			{
+				key: 'EPrice',
+				type: 'Amount',
+				optional: true
+			},
+			{
+				key: 'LPTokenIn',
+				type: 'Amount',
+				optional: true
+			},
+		]
 	},
 	CheckCancel: {
-		fields: []
+		description: `cancels an unredeemed Check, removing it from the ledger without sending any money`,
+		fields: [
+			{
+				key: 'CheckID',
+				type: 'Hash256'
+			}
+		]
 	},
 	CheckCash: {
-		fields: []
+		description: `attempts to redeem a Check object in the ledger to receive up to the amount authorized by the corresponding CheckCreate transaction`,
+		fields: [
+			{
+				key: 'CheckID',
+				type: 'Hash256'
+			},
+			{
+				key: 'Amount',
+				type: 'Amount',
+				optional: true
+			},
+			{
+				key: 'DeliverMin',
+				type: 'Amount',
+				optional: true
+			},
+		]
 	},
 	CheckCreate: {
-		fields: []
+		description: `creates a Check object in the ledger, which is a deferred payment that can be cashed by its intended destination`,
+		fields: [
+			{
+				key: 'Destination',
+				type: 'AccountID'
+			},
+			{
+				key: 'DestinationTag',
+				type: 'UInt32',
+				optional: true
+			},
+			{
+				key: 'SendMax',
+				type: 'Amount'
+			},
+			{
+				key: 'Expiration',
+				type: 'UInt32',
+				optional: true
+			},
+			{
+				key: 'InvoiceID',
+				type: 'Hash256',
+				optional: true
+			}
+		]
 	},
 	Clawback: {
-		fields: []
+		description: `claws back tokens issued by your account`,
+		fields: [
+			{
+				key: 'Amount',
+				type: 'Amount'
+			}
+		]
 	},
 	DepositPreauth: {
 		description: `gives another account pre-approval to deliver payments to the sender of this transaction`,
@@ -97,19 +333,97 @@ const txSpec = {
 		]
 	},
 	DIDDelete: {
+		description: `deletes the DID ledger entry associated with the specified Account field`,
 		fields: []
 	},
 	DIDSet: {
-		fields: []
+		description: `creates a new DID ledger entry or updates the fields of an existing one`,
+		fields: [
+			{
+				key: 'Data',
+				type: 'Blob',
+				optional: true
+			},
+			{
+				key: 'DIDDocument',
+				type: 'Blob',
+				optional: true
+			},
+			{
+				key: 'URI',
+				type: 'Blob',
+				optional: true
+			},
+		]
 	},
 	EscrowCancel: {
-		fields: []
+		description: `returns escrowed XRP to the sender`,
+		fields: [
+			{
+				key: 'Owner',
+				type: 'AccountID'
+			},
+			{
+				key: 'OfferSequence',
+				type: 'UInt32'
+			},
+		]
 	},
 	EscrowCreate: {
-		fields: []
+		description: `sequesters XRP until the escrow process either finishes or is canceled`,
+		fields: [
+			{
+				key: 'Destination',
+				type: 'AccountID'
+			},
+			{
+				key: 'DestinationTag',
+				type: 'UInt32',
+				optional: true
+			},
+			{
+				key: 'Amount',
+				type: 'Amount'
+			},
+			{
+				key: 'FinishAfter',
+				type: 'UInt32',
+				optional: true
+			},
+			{
+				key: 'CancelAfter',
+				type: 'UInt32',
+				optional: true
+			},
+			{
+				key: 'Condition',
+				type: 'Blob',
+				optional: true
+			},
+		]
 	},
 	EscrowFinish: {
-		fields: []
+		description: `delivers XRP from a held payment to the recipient`,
+		fields: [
+			{
+				key: 'Owner',
+				type: 'AccountID'
+			},
+			{
+				key: 'OfferSequence',
+				type: 'UInt32'
+			},
+			{
+				key: 'Condition',
+				type: 'Blob',
+				optional: true
+			},
+			{
+				key: 'Fulfillment',
+				type: 'Blob',
+				optional: true
+			},
+		]
 	},
 	NFTokenAcceptOffer: {
 		fields: []
@@ -136,6 +450,11 @@ const txSpec = {
 			{
 				key: 'TakerPays',
 				type: 'Amount'
+			},
+			{
+				key: 'Expiration',
+				type: 'UInt32',
+				optional: true
 			}
 		],
 		flags: [
@@ -231,7 +550,13 @@ const txSpec = {
 		fields: []
 	},
 	TicketCreate: {
-		fields: []
+		description: `sets aside one or more sequence numbers as Tickets`,
+		fields: [
+			{
+				key: 'TicketCount',
+				type: 'UInt32'
+			}
+		]
 	},
 	TrustSet: {
 		description: `creates or modifies a trust line linking two accounts`,
@@ -419,6 +744,8 @@ function validateFieldInput(input, type){
 		case 'AccountID': 
 			return !isValidClassicAddress(input)
 				&& 'not a valid r-address'
+		case 'UInt8': 
+		case 'UInt16': 
 		case 'UInt32': 
 			return !/^[0-9]+$/.test(input)
 				&& 'not a valid integer number'
@@ -431,11 +758,26 @@ function validateFieldInput(input, type){
 				}
 			break
 		}
+		case 'STIssue': {
+				try{
+					if(typeof input === 'string')
+						parseToken(input)
+				}catch(error){
+					return `${error.message}`
+				}
+			break
+		}
+		case 'Hash256': {
+			if(!/[0-9A-f]{64}/.test(input))
+				return `not a valid 64-character hex string`
+		}
 	}
 }
 
 function parseFieldInput(input, type){
 	switch(type){
+		case 'UInt8':
+		case 'UInt16':
 		case 'UInt32': {
 			input = parseInt(input)
 			break
@@ -443,6 +785,18 @@ function parseFieldInput(input, type){
 		case 'Amount': {
 			try { input = parseAmount(input) } catch {}
 			break
+		}
+		case 'STIssue': {
+			try { input = parseToken(input) } catch {}
+			break
+		}
+		case 'Blob': {
+			if(/[0-9A-F]+/.test(input))
+				return input
+			else
+				return Buffer.from(input)
+					.toString('hex')
+					.toUpperCase()
 		}
 	}
 

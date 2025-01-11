@@ -12,19 +12,22 @@ export function parseAmount(str){
 
 		return value
 	}else{
-		let [currency, issuer] = token.split(':')
-
-		if(currency !== 'XRP'){
-			if(!issuer)
-				throw new SyntaxError(`token amounts must be specified as [VALUE] [CURRENCY]:[ISSUER]`)
-			if(!isValidClassicAddress(issuer))
-				throw new SyntaxError(`malformed token issuing address`)
-		}
-
 		return amountToRippled({
-			currency,
-			issuer,
+			...parseToken(token),
 			value
 		})
 	}
+}
+
+export function parseToken(str){
+	let [currency, issuer] = str.split(':')
+
+	if(currency !== 'XRP'){
+		if(!issuer)
+			throw new SyntaxError(`iou must be specified as [CURRENCY]:[ISSUER]`)
+		if(!isValidClassicAddress(issuer))
+			throw new SyntaxError(`malformed token issuing address`)
+	}
+
+	return { currency, issuer }
 }
