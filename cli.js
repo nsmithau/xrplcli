@@ -5,7 +5,7 @@ import { sign } from './sign.js'
 import { submit } from './submit.js'
 import { askChoice, cyan, red } from './terminal.js'
 import { createTx } from './tx.js'
-import { createWallet, closeWallet, checkWallet } from './wallet.js'
+import { createWallet, closeWallet, verifyWallet } from './wallet.js'
 import { useNode } from './net.js'
 
 async function cli(args){
@@ -38,7 +38,7 @@ async function cli(args){
 						sign: 'sign transaction',
 						submit: 'submit transaction',
 						create: 'create wallet',
-						check: 'check wallet',
+						verify: 'verify wallet',
 						close: 'close wallet',
 					}
 				})
@@ -73,8 +73,8 @@ async function cli(args){
 				break
 			}
 
-			case 'check': {
-				await checkWallet({ secret: null })
+			case 'verify': {
+				await verifyWallet({ secret: null })
 				break
 			}
 

@@ -61,7 +61,7 @@ export async function createWallet({ entropy }){
 	console.log(`wallet mnemonic: ${cyan(keyToMnemonic(decodeSeed(seed).bytes))}`)
 }
 
-export async function checkWallet({ secret }){
+export async function verifyWallet({ secret }){
 	let { address } = secret
 		? deriveCredentials(seed)
 		: await askSecret({ message: `wallet secret` })
@@ -155,6 +155,7 @@ export async function askSecret({ message = `secret key` }){
 	let parse = input => {
 		let type
 		let bytes
+		let algo = 'ed25519'
 
 		input = input.trim()
 
@@ -163,8 +164,11 @@ export async function askSecret({ message = `secret key` }){
 				type = 'mnemonic'
 				bytes = mnemonicToKey(input)
 			}else{
+				let decoded = decodeSeed(input)
+
 				type = 'seed'
-				bytes = decodeSeed(input).bytes
+				bytes = decoded.bytes
+				algo = decoded.type
 			}
 		}catch{
 			type = 'passphrase'
@@ -174,7 +178,7 @@ export async function askSecret({ message = `secret key` }){
 				.slice(0, 16)
 		}
 
-		let seed = encodeSeed(bytes, 'ed25519')
+		let seed = encodeSeed(bytes, algo)
 
 		return {
 			type,
