@@ -441,7 +441,7 @@ function parseFieldInput(input, type){
 			break
 		}
 		case 'Amount': {
-			input = parseAmount(input)
+			try { input = parseAmount(input) } catch {}
 			break
 		}
 	}
