@@ -6,10 +6,13 @@
 		"xrplcli": "./cli.js"
 	},
 	"dependencies": {
+		"@xrplkit/book": "3.1.4",
+		"@xrplkit/simulate": "1.1.5",
 		"@xrplkit/socket": "2.3.0",
 		"@xrplkit/submit": "1.2.0",
 		"@xrplkit/tokens": "1.0.1",
 		"@xrplkit/wallet": "1.2.0",
+		"@xrplkit/xfl": "2.1.1",
 		"enquirer": "2.4.1",
 		"minimist": "1.2.8",
 		"ora": "^8.1.1",

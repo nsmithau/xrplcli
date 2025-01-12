@@ -7,6 +7,7 @@ import { askChoice, cyan, red } from './terminal.js'
 import { createTx } from './tx.js'
 import { createWallet, closeWallet, verifyWallet } from './wallet.js'
 import { useNode } from './net.js'
+import { readNetworth } from './read.js'
 
 async function cli(args){
 	if(args.terminal)
@@ -34,6 +35,7 @@ async function cli(args){
 				action = await askChoice({
 					message: 'choose action',
 					options: {
+						read: 'read ledger data',
 						tx: 'create transaction',
 						sign: 'sign transaction',
 						submit: 'submit transaction',
@@ -53,6 +55,31 @@ async function cli(args){
 		}
 
 		switch(action){
+			case 'read': {
+				let subaction = args._[1]
+
+				if(!subaction){
+					subaction = await askChoice({
+						message: 'what ledger data to read',
+						options: {
+							account: 'account',
+							book: 'book',
+							amm: 'amm',
+							networth: 'networth'
+						}
+					})
+				}
+
+				switch(subaction){
+					case 'networth': {
+						await readNetworth({ account: args._[2], currency: args.currency })
+						break
+					}
+				}
+
+				break
+			}
+
 			case 'tx': {
 				await createTx({ type: args._[1] })
 				break
