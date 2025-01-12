@@ -7,7 +7,7 @@ import { askChoice, cyan, red } from './terminal.js'
 import { createTx } from './tx.js'
 import { createWallet, closeWallet, verifyWallet } from './wallet.js'
 import { useNode } from './net.js'
-import { readNetworth } from './read.js'
+import { readAccount, readNetworth } from './read.js'
 
 async function cli(args){
 	if(args.terminal)
@@ -71,6 +71,11 @@ async function cli(args){
 				}
 
 				switch(subaction){
+					case 'account': {
+						await readAccount({ account: args._[2] })
+						break
+					}
+
 					case 'networth': {
 						await readNetworth({ account: args._[2], currency: args.currency })
 						break
