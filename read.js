@@ -170,7 +170,7 @@ export async function readNetworth({ account, currency }){
 					
 					if(currency === 'XRP' && position.currency === 'XRP'){
 						position.value = position.balance
-					}else if(baseCurrencies[currency].some(token => isSameToken(token, position))){
+					}else if(baseCurrencies[currency]?.some(token => isSameToken(token, position))){
 						position.value = position.balance
 					}else{
 						let valueXRP
