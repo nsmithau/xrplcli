@@ -520,13 +520,94 @@ export const txSpec = {
 		]
 	},
 	PaymentChannelClaim: {
-		fields: []
+		description: `claims XRP from a payment channel, adjusts the payment channel's expiration, or both`,
+		fields: [
+			{
+				key: 'Channel',
+				type: 'Hash256'
+			},
+			{
+				key: 'Balance',
+				type: 'Amount',
+				optional: true
+			},
+			{
+				key: 'Amount',
+				type: 'Amount',
+				optional: true
+			},
+			{
+				key: 'Signature',
+				type: 'Blob',
+				optional: true
+			},
+			{
+				key: 'PublicKey',
+				type: 'Blob',
+				optional: true
+			},
+		],
+		flags: [
+			{
+				name: 'tfRenew',
+				value: 0x00010000
+			},
+			{
+				name: 'tfClose',
+				value: 0x00020000
+			},
+		]
 	},
 	PaymentChannelCreate: {
-		fields: []
+		description: `creates a payment channel and funds it with XRP`,
+		fields: [
+			{
+				key: 'Amount',
+				type: 'Amount'
+			},
+			{
+				key: 'Destination',
+				type: 'AccountID'
+			},
+			{
+				key: 'DestinationTag',
+				type: 'UInt32',
+				optional: true
+			},
+			{
+				key: 'SettleDelay',
+				type: 'UInt32'
+			},
+			{
+				key: 'PublicKey',
+				type: 'Blob',
+				optional: true
+			},
+			{
+				key: 'CancelAfter',
+				type: 'UInt32',
+				optional: true
+			},
+		]
 	},
 	PaymentChannelFund: {
-		fields: []
+		description: `adds additional XRP to an open payment channel, and optionally updates the expiration time of the channel`,
+		fields: [
+			{
+				key: 'Channel',
+				type: 'Hash256'
+			},
+			{
+				key: 'Amount',
+				type: 'Amount',
+				optional: true
+			},
+			{
+				key: 'Expiration',
+				type: 'UInt32',
+				optional: true
+			},
+		],
 	},
 	SetRegularKey: {
 		description: `assigns, changes, or removes the regular key pair associated with an account`,
