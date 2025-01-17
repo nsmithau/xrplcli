@@ -6,8 +6,8 @@ import { submit } from './submit.js'
 import { askChoice, cyan, red } from './terminal.js'
 import { createTx } from './tx.js'
 import { createWallet, closeWallet, verifyWallet } from './wallet.js'
+import { lookupAccount, lookupNetworth, lookupObject } from './lookup.js'
 import { useNode } from './net.js'
-import { readAccount, readNetworth } from './read.js'
 
 async function cli(args){
 	if(args.terminal)
@@ -35,10 +35,10 @@ async function cli(args){
 				action = await askChoice({
 					message: 'choose action',
 					options: {
-						read: 'read ledger data',
 						tx: 'create transaction',
 						sign: 'sign transaction',
 						submit: 'submit transaction',
+						lookup: 'lookup ledger data',
 						create: 'create wallet',
 						verify: 'verify wallet',
 						close: 'close wallet',
@@ -55,36 +55,6 @@ async function cli(args){
 		}
 
 		switch(action){
-			case 'read': {
-				let subaction = args._[1]
-
-				if(!subaction){
-					subaction = await askChoice({
-						message: 'what ledger data to read',
-						options: {
-							account: 'account',
-							book: 'book',
-							amm: 'amm',
-							networth: 'networth'
-						}
-					})
-				}
-
-				switch(subaction){
-					case 'account': {
-						await readAccount({ account: args._[2] })
-						break
-					}
-
-					case 'networth': {
-						await readNetworth({ account: args._[2], currency: args.currency })
-						break
-					}
-				}
-
-				break
-			}
-
 			case 'tx': {
 				await createTx({ type: args._[1] })
 				break
@@ -97,6 +67,40 @@ async function cli(args){
 		
 			case 'submit': {
 				await submit({ payload: null })
+				break
+			}
+
+			case 'lookup': {
+				let subaction = args._[1]
+
+				if(!subaction){
+					subaction = await askChoice({
+						message: 'choose what to look up',
+						options: {
+							account: 'account info & objects',
+							networth: 'account networth',
+							object: 'ledger object by hash'
+						}
+					})
+				}
+
+				switch(subaction){
+					case 'account': {
+						await lookupAccount({ account: args._[2] })
+						break
+					}
+
+					case 'networth': {
+						await lookupNetworth({ account: args._[2], currency: args.currency })
+						break
+					}
+
+					case 'object': {
+						await lookupObject({ index: args._[2] })
+						break
+					}
+				}
+
 				break
 			}
 

@@ -44,7 +44,7 @@ const baseCurrencies = {
 	]
 }
 
-export async function readAccount({ account }){
+export async function lookupAccount({ account }){
 	if(!account){
 		account = await ask({
 			message: `account address:`,
@@ -88,7 +88,7 @@ export async function readAccount({ account }){
 	
 }
 
-export async function readNetworth({ account, currency }){
+export async function lookupNetworth({ account, currency }){
 	let parse = account => {
 		let accounts = account
 			.split(',')
@@ -300,4 +300,34 @@ export async function readNetworth({ account, currency }){
 			positions.reduce((s, p) => sum(s, p.value), '0')
 		)
 	}
+}
+
+export async function lookupObject({ index }){
+	let object
+
+	if(!index){
+		index = await ask({
+			message: `ledger object index (hex):`,
+			required: true,
+			validate: input => /[0-9A-F]{64}/.test(input)
+				? true
+				: `not a valid 64-character hex string`
+		})
+	}
+
+	await presentTask({
+		message: `looking up ledger object`,
+		execute: async () => {
+			let socket = await connect()
+			var result = await socket.request({
+				command: 'ledger_entry',
+				index
+			})
+
+			object = result.node
+		}
+	})
+
+	console.log(``)
+	console.log(object)
 }
