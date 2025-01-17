@@ -580,8 +580,7 @@ export const txSpec = {
 			},
 			{
 				key: 'PublicKey',
-				type: 'Blob',
-				optional: true
+				type: 'Blob'
 			},
 			{
 				key: 'CancelAfter',
