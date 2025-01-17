@@ -1,10 +1,10 @@
 import { sign as libSignTx } from '@xrplkit/submit'
 import { encode, decode } from 'ripple-binary-codec'
-import { askChoice, ask, cyan, red, green } from './terminal.js'
-import { askSecret } from './wallet.js'
-import { submit } from './submit.js'
-import { printQR } from './qr.js'
-import { mnemonicToTx } from './tx.js'
+import { askChoice, ask, cyan, red, green } from '../util/terminal.js'
+import { askSecret } from './credentials.js'
+import { submit } from '../tx/submit.js'
+import { printQR } from '../util/qr.js'
+import { mnemonicToTx } from '../tx/create.js'
 
 
 export async function sign({ }){

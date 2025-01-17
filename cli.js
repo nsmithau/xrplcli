@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
 import minimist from 'minimist'
-import { sign } from './sign.js'
-import { submit } from './submit.js'
-import { askChoice, cyan, red } from './terminal.js'
-import { createTx } from './tx.js'
-import { createWallet, closeWallet, verifyWallet } from './wallet.js'
-import { lookupAccount, lookupNetworth, lookupObject } from './lookup.js'
-import { useNode } from './net.js'
+import { sign } from './wallet/sign.js'
+import { submit } from './tx/submit.js'
+import { askChoice, cyan, red } from './util/terminal.js'
+import { createTx } from './tx/create.js'
+import { createWallet, closeWallet, verifyWallet } from './wallet/manage.js'
+import { lookupAccount, lookupNetworth, lookupObject } from './lookup/index.js'
+import { useNode } from './util/net.js'
 
 async function cli(args){
 	if(args.terminal)

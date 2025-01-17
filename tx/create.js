@@ -1,11 +1,11 @@
 import { isValidClassicAddress } from 'ripple-address-codec'
 import { decode, encode } from 'ripple-binary-codec'
-import { askChoice, askConfirm, askForm, askSelection, cyan, presentTask, red } from './terminal.js'
-import { parseAmount, parseToken } from './utils.js'
-import { connect } from './net.js'
-import { signTx } from './sign.js'
-import { bufferToMnemonic, mnemonicToBuffer } from './rfc1751.js'
-import { txCommonSpec, txSpec } from './txspec.js'
+import { askChoice, askConfirm, askForm, askSelection, cyan, presentTask, red } from '../util/terminal.js'
+import { parseAmount, parseToken } from '../util/parsing.js'
+import { connect } from '../util/net.js'
+import { signTx } from '../wallet/sign.js'
+import { bufferToMnemonic, mnemonicToBuffer } from '../wallet/rfc1751.js'
+import { txCommonSpec, txSpec } from './spec.js'
 
 
 export async function createTx({ type }){

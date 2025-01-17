@@ -1,11 +1,12 @@
 import { div, gt, lte, sum } from '@xrplkit/xfl'
 import { currencyHexToUTF8, formatValue } from '@xrplkit/tokens'
 import { isValidClassicAddress } from 'ripple-address-codec'
-import { ask, askChoice, cyan, presentTask } from './terminal.js'
-import { connect } from './net.js'
+import { ask, askChoice, presentTask } from '../util/terminal.js'
+import { connect } from '../util/net.js'
 import { isSameToken } from '@xrplkit/tokens'
 import { getBookSignature, loadBook } from '@xrplkit/book'
 import { simulateOffer } from '@xrplkit/simulate'
+
 
 const baseCurrencies = {
 	USD: [
@@ -42,50 +43,6 @@ const baseCurrencies = {
 			issuer: 'rKiCet8SdvWxPXnAgYarFUXMh1zCPz432Y'
 		}
 	]
-}
-
-export async function lookupAccount({ account }){
-	if(!account){
-		account = await ask({
-			message: `account address:`,
-			required: true,
-			validate: input => isValidClassicAddress(input)
-				? true
-				: `not a valid r-address`
-		})
-	}
-
-	let data = {}
-
-	await presentTask({
-		message: `reading account ${account}`,
-		execute: async ({ indicator }) => {
-			let socket = await connect()
-
-			let { account_data } = await socket.request({
-				command: 'account_info',
-				account
-			})
-
-			let { account_objects } = await socket.request({
-				command: 'account_objects',
-				account
-			})
-
-			data.info = account_data
-			data.objects = account_objects
-		}
-	})
-
-	console.log(``)
-	console.log(`account info:`)
-	console.log(data.info)
-
-	if(data.objects.length > 0){
-		console.log(`account objects:`)
-		console.log(data.objects)
-	}
-	
 }
 
 export async function lookupNetworth({ account, currency }){
@@ -232,26 +189,6 @@ export async function lookupNetworth({ account, currency }){
 		})
 	}
 
-	let printPosition = position => {
-		let formattedBalance = `${currencyHexToUTF8(position.currency)} (${formatValue(position.balance, { compact: true })})`
-		let formattedValue = parseFloat(position.value.toString()).toLocaleString('en', {
-			minimumFractionDigits: 2,
-			maximumFractionDigits: 2
-		})
-
-		console.log(`- ${formattedBalance.padEnd(16).slice(0, 16)} ${formattedValue.padStart(10)} ${currency}`)
-	}
-
-	let printTotal = total => {
-		let formattedTotal = parseFloat(total.toString()).toLocaleString('en', {
-			minimumFractionDigits: 2,
-			maximumFractionDigits: 2
-		})
-
-		console.log(`---------------------------------`)
-		console.log(`total ${formattedTotal.padStart(23)} ${currency}`)
-	}
-
 	for(let address of accounts){
 		let total = '0'
 
@@ -262,12 +199,12 @@ export async function lookupNetworth({ account, currency }){
 			if(position.address !== address)
 				continue
 
-			printPosition(position)
+			printPosition(currency, position)
 
 			total = sum(total, position.value)
 		}
 
-		printTotal(total)
+		printTotal(currency, total)
 	}
 
 	if(accounts.length > 1){
@@ -289,7 +226,7 @@ export async function lookupNetworth({ account, currency }){
 			let totalBalance = group.reduce((s, p) => sum(s, p.balance), '0')
 			let totalValue = group.reduce((s, p) => sum(s, p.value), '0')
 
-			printPosition({
+			printPosition(currency, {
 				...group[0],
 				balance: totalBalance,
 				value: totalValue
@@ -297,37 +234,28 @@ export async function lookupNetworth({ account, currency }){
 		}
 
 		printTotal(
+			currency,
 			positions.reduce((s, p) => sum(s, p.value), '0')
 		)
 	}
 }
 
-export async function lookupObject({ index }){
-	let object
-
-	if(!index){
-		index = await ask({
-			message: `ledger object index (hex):`,
-			required: true,
-			validate: input => /[0-9A-F]{64}/.test(input)
-				? true
-				: `not a valid 64-character hex string`
-		})
-	}
-
-	await presentTask({
-		message: `looking up ledger object`,
-		execute: async () => {
-			let socket = await connect()
-			var result = await socket.request({
-				command: 'ledger_entry',
-				index
-			})
-
-			object = result.node
-		}
+function printPosition(currency, position){
+	let formattedBalance = `${currencyHexToUTF8(position.currency)} (${formatValue(position.balance, { compact: true })})`
+	let formattedValue = parseFloat(position.value.toString()).toLocaleString('en', {
+		minimumFractionDigits: 2,
+		maximumFractionDigits: 2
 	})
 
-	console.log(``)
-	console.log(object)
+	console.log(`- ${formattedBalance.padEnd(16).slice(0, 16)} ${formattedValue.padStart(10)} ${currency}`)
+}
+
+function printTotal(currency, total){
+	let formattedTotal = parseFloat(total.toString()).toLocaleString('en', {
+		minimumFractionDigits: 2,
+		maximumFractionDigits: 2
+	})
+
+	console.log(`---------------------------------`)
+	console.log(`total ${formattedTotal.padStart(23)} ${currency}`)
 }

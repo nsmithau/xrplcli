@@ -1,6 +1,6 @@
 import { encode } from 'ripple-binary-codec'
-import { connect } from './net.js'
-import { presentTask, ask, green, red } from './terminal.js'
+import { connect } from '../util/net.js'
+import { presentTask, ask, green, red } from '../util/terminal.js'
 
 export async function submit({ blob }){
 	if(!blob)
