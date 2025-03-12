@@ -613,7 +613,27 @@ export const txSpec = {
 			},
 			{
 				key: 'Amount',
-				type: 'Amount'
+				type: 'Amount',
+				optional: true,
+				description: 'The amount to send (legacy format)'
+			},
+			{
+				key: 'AmountValue',
+				type: 'Amount',
+				optional: true,
+				description: 'The amount to send (e.g. "100" for 100 XRP or 100 units of issued currency)'
+			},
+			{
+				key: 'AmountCurrency',
+				type: 'Blob',
+				optional: true,
+				description: 'The currency code (e.g. "USD"). Leave empty for XRP.'
+			},
+			{
+				key: 'AmountIssuer',
+				type: 'AccountID',
+				optional: true,
+				description: 'The account that issues the currency. Required if AmountCurrency is specified.'
 			},
 			{
 				key: 'DeliverMin',
@@ -626,6 +646,30 @@ export const txSpec = {
 				optional: true
 			}
 		],
+		preprocessor: (tx) => {
+			console.log('Processing Payment transaction:', JSON.stringify(tx, null, 2))
+			
+			if (tx.AmountValue) {
+				console.log('Constructing Amount from separate fields')
+				if (tx.AmountCurrency && tx.AmountIssuer) {
+					// Issued Currency payment
+					tx.Amount = {
+						value: tx.AmountValue.toString(),
+						currency: tx.AmountCurrency.toUpperCase().padEnd(3, ' '),
+						issuer: tx.AmountIssuer
+					}
+				} else {
+					// XRP payment
+					tx.Amount = tx.AmountValue.toString()
+				}
+				delete tx.AmountValue
+				delete tx.AmountCurrency
+				delete tx.AmountIssuer
+			}
+			
+			console.log('Processed transaction:', JSON.stringify(tx, null, 2))
+			return tx
+		},
 		flags: [
 			{
 				name: 'tfNoRippleDirect',
@@ -756,10 +800,39 @@ export const txSpec = {
 		description: `creates or modifies a trust line linking two accounts`,
 		fields: [
 			{
-				key: 'LimitAmount',
-				type: 'Amount'
+				key: 'LimitAmountValue',
+				type: 'Amount',
+				description: 'The maximum amount of currency that can be held (e.g. "100")'
+			},
+			{
+				key: 'LimitAmountCurrency',
+				type: 'Blob',
+				description: 'The currency code of the trust line (e.g. "USD")'
+			},
+			{
+				key: 'LimitAmountIssuer',
+				type: 'AccountID',
+				description: 'The account that issues the currency'
 			}
 		],
+		preprocessor: (tx) => {
+			console.log('Processing TrustSet transaction:', JSON.stringify(tx, null, 2))
+			
+			if (tx.LimitAmountValue && tx.LimitAmountCurrency && tx.LimitAmountIssuer) {
+				console.log('Constructing LimitAmount')
+				tx.LimitAmount = {
+					value: tx.LimitAmountValue.toString(),
+					currency: tx.LimitAmountCurrency.toUpperCase().padEnd(3, ' '),
+					issuer: tx.LimitAmountIssuer
+				}
+				delete tx.LimitAmountValue
+				delete tx.LimitAmountCurrency
+				delete tx.LimitAmountIssuer
+			}
+			
+			console.log('Processed transaction:', JSON.stringify(tx, null, 2))
+			return tx
+		},
 		flags: [
 			{
 				name: 'tfSetfAuth',
