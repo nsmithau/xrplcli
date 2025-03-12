@@ -29,6 +29,9 @@ Then run via
   - √ `CheckCash`
   - √ `CheckCreate`
   - √ `Clawback`
+  - √ `CredentialCreate`
+  - √ `CredentialAccept`
+  - √ `CredentialDelete`
   - √ `DepositPreauth`
   - √ `DIDDelete`
   - √ `DIDSet`
