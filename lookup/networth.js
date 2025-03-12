@@ -1,6 +1,6 @@
 import { div, gt, lte, sum } from '@xrplkit/xfl'
 import { currencyHexToUTF8, formatValue } from '@xrplkit/tokens'
-import { isValidClassicAddress } from 'ripple-address-codec'
+import { isValidClassicAddress } from 'xrpl'
 import { ask, askChoice, presentTask } from '../util/terminal.js'
 import { connect } from '../util/net.js'
 import { isSameToken } from '@xrplkit/tokens'

@@ -1,5 +1,5 @@
-import { isValidClassicAddress } from 'ripple-address-codec'
-import { decode, encode } from 'ripple-binary-codec'
+import { isValidClassicAddress } from 'xrpl'
+import { decode, encode } from 'xrpl'
 import { askChoice, askConfirm, askForm, askSelection, cyan, presentTask, red } from '../util/terminal.js'
 import { parseAmount, parseToken } from '../util/parsing.js'
 import { connect } from '../util/net.js'
@@ -144,7 +144,17 @@ export async function createTx({ type }){
 	}
 
 	if(await askConfirm({ message: 'sign now?' })){
-		await signTx({ tx })
+		console.log('Transaction to sign:', JSON.stringify(tx, null, 2))
+		try {
+			await signTx({ 
+				tx: {
+					...tx,
+					TransactionType: type
+				}
+			})
+		} catch (error) {
+			console.error('Error during signing:', error)
+		}
 		return
 	}
 

@@ -163,9 +163,9 @@ export async function askSelection({ message, fields }){
 	}
 }
 
-export async function askTx({ message, hint, parse }){
+export async function askTx({ message, hint, preset }){
 	while(true){
-		let parse = input => {
+		const parseTx = input => {
 			input = input.trim()
 
 			if(input.startsWith('{')){
@@ -191,7 +191,7 @@ export async function askTx({ message, hint, parse }){
 					return 'required'
 				
 				try{
-					parse(input)
+					parseTx(input)
 					return true
 				}catch(error){
 					return error
@@ -209,7 +209,7 @@ export async function askTx({ message, hint, parse }){
 				throw error
 		}
 
-		return parse(input)
+		return parseTx(input)
 	}
 }
 

@@ -1,6 +1,8 @@
 import createSocket from '@xrplkit/socket'
 
-let nodeUrl = 'wss://s1.ripple.com'
+//let nodeUrl = 'wss://s1.ripple.com' // mainnet
+//let nodeUrl = 'wss://s.altnet.rippletest.net' // testnet
+let nodeUrl = 'wss://s.devnet.rippletest.net' // devnet
 let socket
 
 export function useNode({ url }){

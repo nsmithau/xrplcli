@@ -1,94 +1,117 @@
 import { createHash } from 'crypto'
-import { deriveAddress, derivePublicKey } from '@xrplkit/wallet'
+import { Wallet } from 'xrpl'
+import rippleAddressCodec from 'ripple-address-codec'
 import { ask } from '../util/terminal.js'
 import { mnemonicToKey } from './rfc1751.js'
-import { decodeSeed, encodeSeed } from 'ripple-address-codec'
 
 export async function askSecret({ message = `secret key` }){
-	let input = ''
-	let parse = input => {
-		let type
-		let bytes
-		let algo = 'ed25519'
-
-		input = input.trim()
-
-		try{
-			if(input.includes(' ')){
-				type = 'mnemonic'
-				bytes = mnemonicToKey(input)
-			}else{
-				let decoded = decodeSeed(input)
-
-				type = 'seed'
-				bytes = decoded.bytes
-				algo = decoded.type
+	function parse(input) {
+		try {
+			console.log('Processing input...')
+			const result = deriveCredentials(input)
+			if (result) {
+				return result
 			}
-		}catch{
-			type = 'passphrase'
-			bytes = createHash('sha512')
-				.update(input)
-				.digest()
-				.slice(0, 16)
-		}
-
-		let seed = encodeSeed(bytes, algo)
-
-		return {
-			type,
-			seed,
-			address: deriveAddress({ seed })
+			throw new Error('Failed to derive credentials')
+		} catch(error) {
+			throw error
 		}
 	}
-	
-	input = await ask({
-		message: input => input.length === 0
-			? message
-			: `${message} (${parse(input).type})`,
+
+	let result
+	const input = await ask({
+		message,
 		hint: `(seed, mnemonic or passphrase)`,
-		preset: input,
-		note: input => input.length > 0
-			? `  wallet address: ${parse(input).address}`
-			: undefined,
+		validate: input => {
+			try {
+				result = parse(input.trim())
+				return true
+			} catch(error) {
+				return error.message
+			}
+		},
 		required: true,
 		redactAfter: true
 	})
 
-	let { address, seed } = parse(input)
-
-	return {
-		address,
-		seed
-	}
+	return result
 }
 
 export function deriveCredentials(input){
 	if(input.includes(' ')){
 		try{
-			let seed = encodeSeed(
-				mnemonicToBuffer(input),
-				'ed25519'
-			)
+			const bytes = mnemonicToKey(input)
+			const seedHex = Buffer.from(bytes).toString('hex').toUpperCase()
+			const wallet = Wallet.fromSeed(seedHex)
 			return {
-				seed,
-				address: deriveAddress({ seed })
+				seed: seedHex,
+				address: wallet.classicAddress
 			}
-		}catch{}
+		}catch(error){
+			console.error('Failed to derive from mnemonic:', error.message)
+		}
 	}else{
+		let errors = []
+		// Try Ed25519 seed first
+		if (input.startsWith('sEd')) {
+			try {
+				// Try decoding the Ed25519 seed first
+				const decoded = rippleAddressCodec.decodeSeed(input, 'ed25519')
+				console.log('Successfully decoded Ed25519 seed:', {
+					bytes: decoded.bytes.toString('hex'),
+					type: decoded.type,
+					version: decoded.version
+				})
+				
+				// Convert to hex and try creating wallet
+				const entropy = Buffer.from(decoded.bytes).toString('hex').toUpperCase()
+				console.log('Using entropy:', entropy)
+				
+				const wallet = Wallet.fromEntropy(entropy, { algorithm: 'ed25519' })
+				return {
+					seed: input,
+					address: wallet.classicAddress
+				}
+			} catch(e) {
+				errors.push(`Failed to handle Ed25519 seed: ${e.message}`)
+				console.error('Ed25519 seed error:', e)
+				
+				// Try alternative Ed25519 method
+				try {
+					const wallet = Wallet.fromSeed(input, { algorithm: 'ed25519' })
+					return {
+						seed: input,
+						address: wallet.classicAddress
+					}
+				} catch(e2) {
+					errors.push(`Failed alternative Ed25519 method: ${e2.message}`)
+					console.error('Alternative Ed25519 method error:', e2)
+				}
+			}
+		}
+
+		// Try regular seed
 		try{
+			const wallet = Wallet.fromSeed(input)
 			return {
 				seed: input,
-				address: deriveAddress({ seed: input })
+				address: wallet.classicAddress
 			}
-		}catch{}
+		}catch(error){
+			errors.push(`Failed to parse as regular seed: ${error.message}`)
+		}
 	
 		try{
+			const wallet = Wallet.fromPrivateKey(input)
 			return {
 				secretKey: input,
-				address: deriveAddress({
-					publicKey: derivePublicKey({ privateKey: input })
-				})
+				address: wallet.classicAddress
 			}
-		}catch{}
+		}catch(error){
+			errors.push(`Failed to parse as private key: ${error.message}`)
+		}
+
+		console.error('All attempts failed:', errors.join('\n'))
 	}
+	return null
 }

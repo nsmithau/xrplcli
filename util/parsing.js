@@ -1,5 +1,5 @@
 import { amountToRippled } from '@xrplkit/tokens'
-import { isValidClassicAddress } from 'ripple-address-codec'
+import { isValidClassicAddress } from 'xrpl'
 
 export function parseAmount(str){
 	let [value, token] = str.trim().split(' ')

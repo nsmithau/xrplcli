@@ -1,4 +1,4 @@
-import { isValidClassicAddress } from 'ripple-address-codec'
+import { isValidClassicAddress } from 'xrpl'
 import { ask, presentTask } from '../util/terminal.js'
 import { connect } from '../util/net.js'
 

@@ -6,7 +6,7 @@ import { deriveAddress, generateSeed } from '@xrplkit/wallet'
 import { ask, awaitInterrupt, cyan } from '../util/terminal.js'
 import { askSecret } from './credentials.js'
 import { keyToMnemonic } from './rfc1751.js'
-import { decodeSeed } from 'ripple-address-codec'
+import { decodeSeed } from 'xrpl'
 
 
 const __filename = fileURLToPath(import.meta.url)
