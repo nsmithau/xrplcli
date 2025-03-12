@@ -309,6 +309,33 @@ export const txSpec = {
 			}
 		]
 	},
+	CredentialCreate: {
+		description: `Creates a Credential object. It must be sent by the issuer.`,
+		fields: [
+			{
+				key: 'CredentialType',
+				type: 'Blob',
+				description: 'A hex-encoded value to identify the type of credential from the issuer.'
+			},
+			{
+				key: 'Subject',
+				type: 'AccountID',
+				description: 'The account that is the subject of the credential.'
+			},
+			{
+				key: 'URI',
+				type: 'Blob',
+				optional: true,
+				description: 'Additional data about the credential (such as a link to the VC document).'
+			},
+			{
+				key: 'Expiration',
+				type: 'UInt32',
+				optional: true,
+				description: 'Credential expiration.'
+			}
+		]
+	},
 	DepositPreauth: {
 		description: `gives another account pre-approval to deliver payments to the sender of this transaction`,
 		fields: [
