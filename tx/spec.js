@@ -414,11 +414,7 @@ export const txSpec = {
 			}
 		],
 		preprocessor: (tx) => {
-			console.log('Processing DepositPreauth transaction:', JSON.stringify(tx, null, 2))
-			
-			// Handle credential authorization
 			if (tx.AuthorizeCredentialType && tx.AuthorizeCredentialIssuer) {
-				console.log('Adding AuthorizeCredentials')
 				tx.AuthorizeCredentials = [{
 					Credential: {
 						CredentialType: tx.AuthorizeCredentialType,
@@ -429,9 +425,7 @@ export const txSpec = {
 				delete tx.AuthorizeCredentialIssuer
 			}
 			
-			// Handle credential unauthorized
 			if (tx.UnauthorizeCredentialType && tx.UnauthorizeCredentialIssuer) {
-				console.log('Adding UnauthorizeCredentials')
 				tx.UnauthorizeCredentials = [{
 					Credential: {
 						CredentialType: tx.UnauthorizeCredentialType,
@@ -442,7 +436,6 @@ export const txSpec = {
 				delete tx.UnauthorizeCredentialIssuer
 			}
 			
-			console.log('Processed transaction:', JSON.stringify(tx, null, 2))
 			return tx
 		}
 	},
@@ -647,27 +640,20 @@ export const txSpec = {
 			}
 		],
 		preprocessor: (tx) => {
-			console.log('Processing Payment transaction:', JSON.stringify(tx, null, 2))
-			
 			if (tx.AmountValue) {
-				console.log('Constructing Amount from separate fields')
 				if (tx.AmountCurrency && tx.AmountIssuer) {
-					// Issued Currency payment
 					tx.Amount = {
 						value: tx.AmountValue.toString(),
 						currency: tx.AmountCurrency.toUpperCase().padEnd(3, ' '),
 						issuer: tx.AmountIssuer
 					}
 				} else {
-					// XRP payment
 					tx.Amount = tx.AmountValue.toString()
 				}
 				delete tx.AmountValue
 				delete tx.AmountCurrency
 				delete tx.AmountIssuer
 			}
-			
-			console.log('Processed transaction:', JSON.stringify(tx, null, 2))
 			return tx
 		},
 		flags: [
@@ -816,10 +802,7 @@ export const txSpec = {
 			}
 		],
 		preprocessor: (tx) => {
-			console.log('Processing TrustSet transaction:', JSON.stringify(tx, null, 2))
-			
 			if (tx.LimitAmountValue && tx.LimitAmountCurrency && tx.LimitAmountIssuer) {
-				console.log('Constructing LimitAmount')
 				tx.LimitAmount = {
 					value: tx.LimitAmountValue.toString(),
 					currency: tx.LimitAmountCurrency.toUpperCase().padEnd(3, ' '),
@@ -829,8 +812,6 @@ export const txSpec = {
 				delete tx.LimitAmountCurrency
 				delete tx.LimitAmountIssuer
 			}
-			
-			console.log('Processed transaction:', JSON.stringify(tx, null, 2))
 			return tx
 		},
 		flags: [

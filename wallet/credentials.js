@@ -45,7 +45,8 @@ export function deriveCredentials(input){
 			const wallet = Wallet.fromSeed(seedHex)
 			return {
 				seed: seedHex,
-				address: wallet.classicAddress
+				address: wallet.classicAddress,
+				publicKey: wallet.publicKey
 			}
 		}catch(error){
 			console.error('Failed to derive from mnemonic:', error.message)
@@ -57,35 +58,28 @@ export function deriveCredentials(input){
 			try {
 				// Try decoding the Ed25519 seed first
 				const decoded = rippleAddressCodec.decodeSeed(input, 'ed25519')
-				console.log('Successfully decoded Ed25519 seed:', {
-					bytes: decoded.bytes.toString('hex'),
-					type: decoded.type,
-					version: decoded.version
-				})
 				
 				// Convert to hex and try creating wallet
 				const entropy = Buffer.from(decoded.bytes).toString('hex').toUpperCase()
-				console.log('Using entropy:', entropy)
-				
 				const wallet = Wallet.fromEntropy(entropy, { algorithm: 'ed25519' })
 				return {
 					seed: input,
-					address: wallet.classicAddress
+					address: wallet.classicAddress,
+					publicKey: wallet.publicKey
 				}
 			} catch(e) {
 				errors.push(`Failed to handle Ed25519 seed: ${e.message}`)
-				console.error('Ed25519 seed error:', e)
 				
 				// Try alternative Ed25519 method
 				try {
 					const wallet = Wallet.fromSeed(input, { algorithm: 'ed25519' })
 					return {
 						seed: input,
-						address: wallet.classicAddress
+						address: wallet.classicAddress,
+						publicKey: wallet.publicKey
 					}
 				} catch(e2) {
 					errors.push(`Failed alternative Ed25519 method: ${e2.message}`)
-					console.error('Alternative Ed25519 method error:', e2)
 				}
 			}
 		}
@@ -95,7 +89,8 @@ export function deriveCredentials(input){
 			const wallet = Wallet.fromSeed(input)
 			return {
 				seed: input,
-				address: wallet.classicAddress
+				address: wallet.classicAddress,
+				publicKey: wallet.publicKey
 			}
 		}catch(error){
 			errors.push(`Failed to parse as regular seed: ${error.message}`)
@@ -105,7 +100,8 @@ export function deriveCredentials(input){
 			const wallet = Wallet.fromPrivateKey(input)
 			return {
 				secretKey: input,
-				address: wallet.classicAddress
+				address: wallet.classicAddress,
+				publicKey: wallet.publicKey
 			}
 		}catch(error){
 			errors.push(`Failed to parse as private key: ${error.message}`)

@@ -67,32 +67,38 @@ export async function signTx({ tx }){
 		return
 	}
 
-	console.log('Signing transaction:', JSON.stringify(tx, null, 2))
 	let credentials = await askSecret({ message: `secret key to sign` })
 	let signed
 	try{
-		console.log('Creating wallet with credentials...')
-		const wallet = Wallet.fromSeed(credentials.seed, { algorithm: 'ed25519' })
-		console.log('Wallet created successfully')
+		// Create wallet from seed
+		const wallet = Wallet.fromSeed(credentials.seed)
 		
-		console.log('Signing transaction...')
+		// Make sure account field is set if not already
+		if (!tx.Account) {
+			tx.Account = wallet.classicAddress
+		}
+		
+		// Sign the transaction
 		signed = wallet.sign(tx)
-		console.log('Successfully signed transaction')
-		console.log('Signed transaction:', signed)
+		console.log('Transaction signed successfully')
 	}catch(error){
 		console.error('Signing error:', error)
 		console.log(red(`failed to sign: ${error.message}`))
 		return
 	}
 
-	let signedJson = JSON.stringify(signed, null, 4)
-	let signedBlob = encode(signed)
+	// Use try/catch for encoding
+	let signedBlob
+	try {
+		signedBlob = signed.tx_blob
+		console.log('Generated blob length:', signedBlob.length)
+	} catch (error) {
+		console.error('Encoding error:', error)
+		console.log(red(`failed to get transaction blob: ${error.message}`))
+		return
+	}
 
 	console.log(`${green(`√`)} signed as ${credentials.address}`)
-	console.log()
-	console.log(`signed blob:\n${cyan(signedBlob)}`)
-	console.log()
-	console.log(`signed json:\n${cyan(signedJson)}`)
 
 	while(true){
 		console.log()
@@ -107,7 +113,12 @@ export async function signTx({ tx }){
 	
 		switch(nextAction){
 			case 'submit': {
-				await submit({ blob: signedBlob })
+				try {
+					await submit({ blob: signedBlob })
+				} catch (error) {
+					console.error('Submit error:', error)
+					console.log(red(`failed to submit: ${error.message}`))
+				}
 				return
 			}
 

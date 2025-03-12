@@ -149,7 +149,7 @@ export async function createTx({ type }){
 	}
 
 	if(await askConfirm({ message: 'sign now?' })){
-		console.log('Transaction to sign:', JSON.stringify(tx, null, 2))
+		//console.log('Transaction to sign:', JSON.stringify(tx, null, 2))
 		try {
 			await signTx({ 
 				tx: {
