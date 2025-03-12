@@ -336,6 +336,43 @@ export const txSpec = {
 			}
 		]
 	},
+	CredentialAccept: {
+		description: `Accepts a credential, which makes the credential valid. Only the subject of the credential can do this.`,
+		fields: [
+			{
+				key: 'Issuer',
+				type: 'AccountID',
+				description: 'The address of the issuer that created the credential.'
+			},
+			{
+				key: 'CredentialType',
+				type: 'Blob',
+				description: 'Arbitrary data defining the type of credential. The minimum size is 1 byte and the maximum is 64 bytes.'
+			}
+		]
+	},
+	CredentialDelete: {
+		description: `Deletes a credential from the ledger. Can be submitted by either the issuer or the subject of the credential.`,
+		fields: [
+			{
+				key: 'CredentialType',
+				type: 'Blob',
+				description: 'The type of credential to delete.'
+			},
+			{
+				key: 'Issuer',
+				type: 'AccountID',
+				description: 'The address of the issuer that created the credential.',
+				optional: true
+			},
+			{
+				key: 'Subject',
+				type: 'AccountID',
+				description: 'The address of the subject of the credential.',
+				optional: true
+			}
+		]
+	},
 	DepositPreauth: {
 		description: `gives another account pre-approval to deliver payments to the sender of this transaction`,
 		fields: [
