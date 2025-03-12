@@ -374,19 +374,77 @@ export const txSpec = {
 		]
 	},
 	DepositPreauth: {
-		description: `gives another account pre-approval to deliver payments to the sender of this transaction`,
+		description: `gives another account or credential pre-approval to deliver payments to the sender of this transaction`,
 		fields: [
 			{
 				key: 'Authorize',
 				type: 'AccountID',
-				optional: true
+				optional: true,
+				description: 'The XRP Ledger address of the sender to preauthorize.'
 			},
 			{
-				key: 'Deauthorize',
+				key: 'Unauthorize',
 				type: 'AccountID',
-				optional: true
+				optional: true,
+				description: 'The XRP Ledger address of a sender whose preauthorization should be revoked.'
+			},
+			{
+				key: 'AuthorizeCredentialType',
+				type: 'Blob',
+				optional: true,
+				description: 'The type of credential to preauthorize (hex-encoded).'
+			},
+			{
+				key: 'AuthorizeCredentialIssuer',
+				type: 'AccountID',
+				optional: true,
+				description: 'The issuer of the credential to preauthorize.'
+			},
+			{
+				key: 'UnauthorizeCredentialType',
+				type: 'Blob',
+				optional: true,
+				description: 'The type of credential to unauthorize (hex-encoded).'
+			},
+			{
+				key: 'UnauthorizeCredentialIssuer',
+				type: 'AccountID',
+				optional: true,
+				description: 'The issuer of the credential to unauthorize.'
 			}
-		]
+		],
+		preprocessor: (tx) => {
+			console.log('Processing DepositPreauth transaction:', JSON.stringify(tx, null, 2))
+			
+			// Handle credential authorization
+			if (tx.AuthorizeCredentialType && tx.AuthorizeCredentialIssuer) {
+				console.log('Adding AuthorizeCredentials')
+				tx.AuthorizeCredentials = [{
+					Credential: {
+						CredentialType: tx.AuthorizeCredentialType,
+						Issuer: tx.AuthorizeCredentialIssuer
+					}
+				}]
+				delete tx.AuthorizeCredentialType
+				delete tx.AuthorizeCredentialIssuer
+			}
+			
+			// Handle credential unauthorized
+			if (tx.UnauthorizeCredentialType && tx.UnauthorizeCredentialIssuer) {
+				console.log('Adding UnauthorizeCredentials')
+				tx.UnauthorizeCredentials = [{
+					Credential: {
+						CredentialType: tx.UnauthorizeCredentialType,
+						Issuer: tx.UnauthorizeCredentialIssuer
+					}
+				}]
+				delete tx.UnauthorizeCredentialType
+				delete tx.UnauthorizeCredentialIssuer
+			}
+			
+			console.log('Processed transaction:', JSON.stringify(tx, null, 2))
+			return tx
+		}
 	},
 	DIDDelete: {
 		description: `deletes the DID ledger entry associated with the specified Account field`,

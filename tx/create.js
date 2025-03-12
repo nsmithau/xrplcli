@@ -128,6 +128,11 @@ export async function createTx({ type }){
 			}
 		}
 
+		// Run preprocessor if available
+		if (txSpec[type].preprocessor) {
+			tx = txSpec[type].preprocessor(tx)
+		}
+
 		blob = encode({ TransactionType: type, ...tx })
 		tx = decode(blob)
 	
